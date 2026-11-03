@@ -1,0 +1,422 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: auth
+    description: Account sign-up, login, and logout
+  - name: wind-down
+    description: Private single-tester bedtime interruption prototype
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /auth/signup:
+    post:
+      operationId: signUp
+      tags: [auth]
+      summary: Create an account and sign in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthCredentials"
+      responses:
+        "201":
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResult"
+        "400":
+          description: Invalid email or password
+        "409":
+          description: Email already has an account
+  /auth/login:
+    post:
+      operationId: logIn
+      tags: [auth]
+      summary: Sign in to an account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthCredentials"
+      responses:
+        "200":
+          description: Signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResult"
+        "401":
+          description: Email or password is incorrect
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      summary: Return the signed-in account
+      security:
+        - CookieSession: []
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "401":
+          description: Signed out
+  /auth/logout:
+    post:
+      operationId: logOut
+      tags: [auth]
+      summary: End the current session
+      responses:
+        "204":
+          description: Signed out
+  /wind-down/testers:
+    post:
+      operationId: createWindDownTester
+      tags: [wind-down]
+      summary: Create a private tester and token
+      security:
+        - CookieSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TesterCreateInput"
+      responses:
+        "201":
+          description: Tester created. The private token is returned once.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TesterCreated"
+        "400":
+          description: Invalid tester settings
+  /wind-down/me:
+    get:
+      operationId: getWindDownTester
+      tags: [wind-down]
+      summary: Read current tester settings and status
+      security:
+        - CookieSession: []
+          TesterToken: []
+      responses:
+        "200":
+          description: Current tester state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TesterState"
+        "401":
+          description: Invalid or missing tester token
+    patch:
+      operationId: updateWindDownSettings
+      tags: [wind-down]
+      summary: Update bedtime, morning end, timezone, or test mode
+      security:
+        - CookieSession: []
+          TesterToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TesterSettingsInput"
+      responses:
+        "200":
+          description: Updated tester state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TesterState"
+        "400":
+          description: Invalid settings
+        "401":
+          description: Invalid or missing tester token
+  /wind-down/check:
+    post:
+      operationId: checkWindDown
+      tags: [wind-down]
+      summary: Check whether an Instagram open should pause
+      description: Records the app-open event. Call from the personal iPhone Shortcut.
+      security:
+        - TesterToken: []
+      responses:
+        "200":
+          description: Allow or pause decision
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShortcutDecision"
+        "401":
+          description: Invalid or missing tester token
+  /wind-down/pause-choice:
+    post:
+      operationId: saveWindDownPauseChoice
+      tags: [wind-down]
+      summary: Save a pause choice and optionally start a 10-minute bypass
+      security:
+        - TesterToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PauseChoiceInput"
+      responses:
+        "200":
+          description: Choice saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PauseChoiceResult"
+        "401":
+          description: Invalid or missing tester token
+  /wind-down/routine/complete:
+    post:
+      operationId: completeWindDownRoutine
+      tags: [wind-down]
+      summary: Record explicit completion of the bedtime routine
+      security:
+        - CookieSession: []
+          TesterToken: []
+        - TesterToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoutineCompleteInput"
+      responses:
+        "201":
+          description: Routine completion recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoutineCompleteResult"
+        "400":
+          description: Routine must be explicitly completed with all steps checked
+        "401":
+          description: Invalid or missing tester token
+  /wind-down/sessions/{sessionId}:
+    get:
+      operationId: getWindDownSession
+      tags: [wind-down]
+      summary: Read a session belonging to the signed-in user
+      security:
+        - CookieSession: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Session owned by the signed-in user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WindDownSession"
+        "401":
+          description: Signed out
+        "404":
+          description: Session not found for this user
+components:
+  securitySchemes:
+    TesterToken:
+      type: apiKey
+      in: header
+      name: X-Tester-Token
+    CookieSession:
+      type: apiKey
+      in: cookie
+      name: wind_down_session
+  schemas:
+    AuthCredentials:
+      type: object
+      additionalProperties: false
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 10
+      required: [email, password]
+    AuthUser:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
+      required: [id, email]
+    AuthResult:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/AuthUser"
+      required: [user]
+    WindDownSession:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        routineId:
+          type: ["string", "null"]
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: ["string", "null"]
+          format: date-time
+        outcome:
+          type: ["string", "null"]
+        minutesDelayed:
+          type: ["integer", "null"]
+        note:
+          type: ["string", "null"]
+      required: [id, userId, routineId, startedAt, endedAt, outcome, minutesDelayed, note]
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    TesterCreateInput:
+      type: object
+      additionalProperties: false
+      properties:
+        timezone:
+          type: string
+          minLength: 1
+      required: [timezone]
+    TesterSettingsInput:
+      type: object
+      additionalProperties: false
+      properties:
+        bedtime:
+          type: string
+          pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        morningEnd:
+          type: string
+          pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        timezone:
+          type: string
+          minLength: 1
+        testMode:
+          type: boolean
+      required: [bedtime, morningEnd, timezone, testMode]
+    TesterCreated:
+      type: object
+      properties:
+        token:
+          type: string
+        bedtime:
+          type: string
+        morningEnd:
+          type: string
+        timezone:
+          type: string
+        testMode:
+          type: boolean
+        windowActive:
+          type: boolean
+        bypassExpiresAt:
+          type: ["string", "null"]
+      required: [token, bedtime, morningEnd, timezone, testMode, windowActive, bypassExpiresAt]
+    TesterState:
+      type: object
+      properties:
+        bedtime:
+          type: string
+        morningEnd:
+          type: string
+        timezone:
+          type: string
+        testMode:
+          type: boolean
+        windowActive:
+          type: boolean
+        bypassExpiresAt:
+          type: ["string", "null"]
+      required: [bedtime, morningEnd, timezone, testMode, windowActive, bypassExpiresAt]
+    ShortcutDecision:
+      type: object
+      properties:
+        decision:
+          type: string
+          enum: [allow, pause]
+        reason:
+          type: string
+          enum: [outside_window, test_mode, active_bypass, wind_down_window]
+        pauseUrl:
+          type: ["string", "null"]
+        bypassExpiresAt:
+          type: ["string", "null"]
+      required: [decision, reason, pauseUrl, bypassExpiresAt]
+    PauseChoiceInput:
+      type: object
+      additionalProperties: false
+      properties:
+        choice:
+          type: string
+          enum: [start_wind_down, continue_to_instagram]
+      required: [choice]
+    PauseChoiceResult:
+      type: object
+      properties:
+        choice:
+          type: string
+          enum: [start_wind_down, continue_to_instagram]
+        bypassExpiresAt:
+          type: ["string", "null"]
+      required: [choice, bypassExpiresAt]
+    RoutineCompleteInput:
+      type: object
+      additionalProperties: false
+      properties:
+        completedSteps:
+          type: array
+          items:
+            type: string
+            enum: [phone_on_charger, brush_teeth, read_five_minutes]
+      required: [completedSteps]
+    RoutineCompleteResult:
+      type: object
+      properties:
+        completed:
+          type: boolean
+        completedAt:
+          type: string
+      required: [completed, completedAt]
+

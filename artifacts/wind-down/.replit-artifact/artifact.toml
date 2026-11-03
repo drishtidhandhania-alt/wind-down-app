@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Wind Down"
+description = "A private, mobile-first bedtime interruption tool for one iPhone tester. Configure the wind-down window, check Instagram opens from a Shortcut, save temporary bypasses, and complete a short bedtime routine."
+version = "1.0.0"
+id = "artifacts/wind-down"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22083
+
+[services.development]
+run = "pnpm --filter @workspace/wind-down run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/wind-down", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/wind-down/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22083"
+BASE_PATH = "/"

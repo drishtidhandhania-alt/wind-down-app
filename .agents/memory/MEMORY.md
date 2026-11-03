@@ -1,0 +1,1 @@
+- [Wind Down auth boundary](wind-down-auth-boundary.md) — keep Shortcut token access separate from account-protected settings and session reads.
