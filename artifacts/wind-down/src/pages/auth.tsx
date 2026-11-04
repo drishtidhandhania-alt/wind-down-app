@@ -6,11 +6,14 @@ import { PageHeading } from '@/components/shell';
 import { AUTH_QUERY_KEY, submitAuth, useCurrentUser } from '@/lib/auth-api';
 import { activateTesterScope } from '@/lib/tester-api';
 
+type AuthFieldErrors = Partial<Record<'email' | 'password', string>>;
+
 export default function AuthPage() {
   const [location, setLocation] = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<AuthFieldErrors>({});
   const [pending, setPending] = useState(false);
   const queryClient = useQueryClient();
   const auth = useCurrentUser();
@@ -26,6 +29,21 @@ export default function AuthPage() {
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError('');
+    const emailInput = event.currentTarget.elements.namedItem('email') as HTMLInputElement | null;
+    const nextFieldErrors: AuthFieldErrors = {};
+    if (!email.trim()) {
+      nextFieldErrors.email = 'Enter your email address to continue.';
+    } else if (emailInput?.validity.typeMismatch) {
+      nextFieldErrors.email = 'Enter an email address in the usual format.';
+    }
+    if (!password) {
+      nextFieldErrors.password = 'Enter your password to continue.';
+    } else if (isSignup && password.length < 10) {
+      nextFieldErrors.password = 'Use at least 10 characters for your password.';
+    }
+    setFieldErrors(nextFieldErrors);
+    if (Object.keys(nextFieldErrors).length > 0) return;
+
     setPending(true);
     try {
       const user = await submitAuth(
@@ -76,33 +94,51 @@ export default function AuthPage() {
           <span className="grid size-10 place-items-center rounded-full bg-[hsl(var(--primary)/.1)] text-[hsl(var(--primary))]"><Moon size={18} /></span>
           <span>Only your account can access your Wind Down data.</span>
         </div>
-        <form onSubmit={submit} className="space-y-5">
+        <form noValidate onSubmit={submit} className="space-y-5">
           <label className="block text-sm font-medium">
             Email
             <input
               type="email"
+              name="email"
               autoComplete="email"
               required
               maxLength={254}
               value={email}
-              onChange={(event) => setEmail(event.target.value)}
+              aria-invalid={Boolean(fieldErrors.email)}
+              aria-describedby={fieldErrors.email ? 'auth-email-error' : undefined}
+              onChange={(event) => {
+                setEmail(event.target.value);
+                if (event.target.value.trim()) {
+                  setFieldErrors((current) => ({ ...current, email: undefined }));
+                }
+              }}
               className="mt-2 block min-h-12 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background)/.65)] px-4 text-base text-[hsl(var(--foreground))]"
               data-testid="input-auth-email"
             />
+            {fieldErrors.email && <span id="auth-email-error" className="mt-1 block text-sm font-normal text-[hsl(var(--destructive))]" role="alert">{fieldErrors.email}</span>}
           </label>
           <label className="block text-sm font-medium">
             Password
             <input
               type="password"
+              name="password"
               autoComplete={isSignup ? 'new-password' : 'current-password'}
               required
               minLength={isSignup ? 10 : 1}
               maxLength={1024}
               value={password}
-              onChange={(event) => setPassword(event.target.value)}
+              aria-invalid={Boolean(fieldErrors.password)}
+              aria-describedby={fieldErrors.password ? 'auth-password-error' : undefined}
+              onChange={(event) => {
+                setPassword(event.target.value);
+                  if (event.target.value && (!isSignup || event.target.value.length >= 10)) {
+                  setFieldErrors((current) => ({ ...current, password: undefined }));
+                }
+              }}
               className="mt-2 block min-h-12 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background)/.65)] px-4 text-base text-[hsl(var(--foreground))]"
               data-testid="input-auth-password"
             />
+            {fieldErrors.password && <span id="auth-password-error" className="mt-1 block text-sm font-normal text-[hsl(var(--destructive))]" role="alert">{fieldErrors.password}</span>}
             {isSignup && <span className="mt-2 block text-xs text-[hsl(var(--muted-foreground))]">Use at least 10 characters.</span>}
           </label>
           {error && <p className="text-sm text-[hsl(var(--destructive))]" role="alert">{error}</p>}

@@ -15,6 +15,7 @@ export default function SetupPage() {
   const [revealed, setRevealed] = useState(false);
   const [copied, setCopied] = useState(false);
   const [restoreMessage, setRestoreMessage] = useState('');
+  const [restoreError, setRestoreError] = useState('');
   const queryClient = useQueryClient();
   useEffect(() => {
     const saved = getTesterToken(userId) || '';
@@ -56,7 +57,12 @@ export default function SetupPage() {
   const restore = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const clean = tokenInput.trim();
-    if (!clean) return;
+    if (!clean) {
+      setRestoreError('Paste your private tester token to restore this space.');
+      setRestoreMessage('');
+      return;
+    }
+    setRestoreError('');
     storeTesterToken(userId, clean);
     setToken(clean);
     setTokenReady(true);
@@ -113,10 +119,11 @@ export default function SetupPage() {
               </button>
               {createTester.isError && <p className="mt-3 text-sm text-[hsl(var(--destructive))]" role="alert">We couldn’t create the token. Please try again.</p>}
               <div className="my-6 flex items-center gap-3 font-mono text-xs text-[hsl(var(--muted-foreground))]"><span className="h-px flex-1 bg-[hsl(var(--border))]" />Or restore<span className="h-px flex-1 bg-[hsl(var(--border))]" /></div>
-              <form onSubmit={restore} className="space-y-3">
+              <form noValidate onSubmit={restore} className="space-y-3">
                 <label htmlFor="restore-token" className="text-xs font-medium text-[hsl(var(--muted-foreground))]">Paste an existing private token</label>
-                <input id="restore-token" type="password" autoComplete="off" value={tokenInput} onChange={(event) => setTokenInput(event.target.value)} placeholder="Your tester token" className="min-h-12 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background)/.7)] px-4 text-sm" data-testid="input-restore-token" />
-                <button type="submit" disabled={!tokenInput.trim()} className="min-h-12 w-full rounded-full border border-[hsl(var(--border))] font-medium hover:bg-[hsl(var(--secondary))] disabled:opacity-40" data-testid="button-restore-token">Restore on this device</button>
+                <input id="restore-token" type="password" autoComplete="off" required aria-invalid={Boolean(restoreError)} aria-describedby={restoreError ? 'restore-token-error' : undefined} value={tokenInput} onChange={(event) => { setTokenInput(event.target.value); if (event.target.value.trim()) setRestoreError(''); }} placeholder="Your tester token" className="min-h-12 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background)/.7)] px-4 text-sm" data-testid="input-restore-token" />
+                {restoreError && <p id="restore-token-error" className="text-sm text-[hsl(var(--destructive))]" role="alert">{restoreError}</p>}
+                <button type="submit" className="min-h-12 w-full rounded-full border border-[hsl(var(--border))] font-medium hover:bg-[hsl(var(--secondary))]" data-testid="button-restore-token">Restore on this device</button>
                 {restoreMessage && <p role="status" className="text-sm text-[hsl(var(--muted-foreground))]">{restoreMessage}</p>}
               </form>
             </>
