@@ -120,6 +120,33 @@ async function findOwnedTester(
   return undefined;
 }
 
+async function findActionTester(
+  req: Request,
+  res: Response,
+): Promise<WindDownTester | undefined> {
+  if (req.header("x-tester-token") !== undefined) {
+    if (req.authUserId) return findOwnedTester(req, res);
+
+    const tester = await findTester(req);
+    if (!tester) {
+      res.status(401).json({ error: "A valid private tester token is required." });
+    }
+    return tester;
+  }
+
+  if (!req.authUserId) {
+    res.status(401).json({ error: "A valid private tester token is required." });
+    return undefined;
+  }
+
+  const [tester] = await db
+    .select()
+    .from(windDownTestersTable)
+    .where(eq(windDownTestersTable.userId, req.authUserId))
+    .limit(1);
+  return tester;
+}
+
 function validTimezone(timezone: string): boolean {
   try {
     new Intl.DateTimeFormat("en-US", { timeZone: timezone });
@@ -320,9 +347,7 @@ router.post("/wind-down/check", async (req, res): Promise<void> => {
 });
 
 router.post("/wind-down/pause-choice", async (req, res): Promise<void> => {
-  const tester = req.authUserId
-    ? await findOwnedTester(req, res)
-    : await findTester(req);
+  const tester = await findActionTester(req, res);
   if (!tester) {
     if (!res.headersSent) {
       res.status(401).json({ error: "A valid private tester token is required." });
@@ -391,15 +416,8 @@ router.post("/wind-down/pause-choice", async (req, res): Promise<void> => {
 });
 
 router.post("/wind-down/routine/complete", async (req, res): Promise<void> => {
-  const tester = req.authUserId
-    ? await findOwnedTester(req, res)
-    : await findTester(req);
-  if (!tester) {
-    if (!res.headersSent) {
-      res.status(401).json({ error: "A valid private tester token is required." });
-    }
-    return;
-  }
+  const tester = await findActionTester(req, res);
+  if (res.headersSent) return;
 
   const bodyHasStartedAt =
     typeof req.body === "object" &&
@@ -448,7 +466,7 @@ router.post("/wind-down/routine/complete", async (req, res): Promise<void> => {
     return;
   }
 
-  const userId = tester.userId;
+  const userId = req.authUserId ?? tester?.userId;
   if (!userId) {
     res.status(409).json({
       error: "Connect this private tester to your account before saving a routine completion.",
@@ -458,11 +476,13 @@ router.post("/wind-down/routine/complete", async (req, res): Promise<void> => {
 
   const startedAt = suppliedStartedAt ?? completedAt;
   await db.transaction(async (tx) => {
-    await tx.insert(windDownEventsTable).values({
-      testerId: tester.id,
-      eventType: "routine_complete",
-      details: { completedSteps },
-    });
+    if (tester) {
+      await tx.insert(windDownEventsTable).values({
+        testerId: tester.id,
+        eventType: "routine_complete",
+        details: { completedSteps },
+      });
+    }
     await tx.insert(windDownSessionsTable).values({
       id: randomUUID(),
       userId,
