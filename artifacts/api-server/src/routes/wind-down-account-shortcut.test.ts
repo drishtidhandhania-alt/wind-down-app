@@ -111,7 +111,10 @@ test("account-owned settings stay private while the Shortcut token still works",
         "X-Tester-Token": tester.token,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ choice: "continue_to_instagram" }),
+      body: JSON.stringify({
+        choice: "continue_to_instagram",
+        reason: "I need to finish one message.",
+      }),
     });
     assert.equal(pauseChoice.status, 200);
     const bypass = (await pauseChoice.json()) as {

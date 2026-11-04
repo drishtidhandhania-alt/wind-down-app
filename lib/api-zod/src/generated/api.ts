@@ -146,8 +146,13 @@ export const CheckWindDownResponse = zod.object({
 /**
  * @summary Save a pause choice and optionally start a 10-minute bypass
  */
+export const saveWindDownPauseChoiceBodyReasonMax = 200;
+
+
+
 export const SaveWindDownPauseChoiceBody = zod.object({
-  "choice": zod.enum(['start_wind_down', 'continue_to_instagram'])
+  "choice": zod.enum(['start_wind_down', 'continue_to_instagram']),
+  "reason": zod.string().max(saveWindDownPauseChoiceBodyReasonMax).optional().describe('Required when choice is continue_to_instagram; omitted for start_wind_down.')
 })
 
 export const SaveWindDownPauseChoiceResponse = zod.object({

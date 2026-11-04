@@ -12,6 +12,8 @@ export default function PausePage() {
   const auth = useCurrentUser();
   const [launchFallback, setLaunchFallback] = useState(false);
   const [message, setMessage] = useState('');
+  const [bypassReason, setBypassReason] = useState('');
+  const [reasonError, setReasonError] = useState('');
   const choice = useSaveWindDownPauseChoice({ request: testerRequest(auth.data?.id) });
   const queryClient = useQueryClient();
 
@@ -22,9 +24,18 @@ export default function PausePage() {
   }, [launchFallback]);
 
   const decide = (selected: 'start_wind_down' | 'continue_to_instagram') => {
+    const cleanReason = bypassReason.trim();
+    if (selected === 'continue_to_instagram' && !cleanReason) {
+      setReasonError('Add a short reason before continuing to Instagram.');
+      return;
+    }
+    setReasonError('');
     setMessage('');
     setLaunchFallback(false);
-    choice.mutate({ data: { choice: selected } }, {
+    const data = selected === 'continue_to_instagram'
+      ? { choice: selected, reason: cleanReason }
+      : { choice: selected };
+    choice.mutate({ data }, {
       onSuccess: async () => {
         await queryClient.invalidateQueries({ queryKey: getGetWindDownTesterQueryKey() });
         if (selected === 'start_wind_down') {
@@ -48,6 +59,36 @@ export default function PausePage() {
         <h1 className="font-display mx-auto mt-3 max-w-xl text-4xl leading-[1.15] tracking-[-.025em]">What are you here for?</h1>
         <p className="mx-auto mt-4 max-w-md text-base leading-[1.6] text-[hsl(var(--muted-foreground))]">No wrong answer. Let the first thought arrive before your thumb decides.</p>
         <div className="mx-auto mt-7 max-w-md space-y-3">
+          <div className="text-left">
+            <label htmlFor="bypass-reason" className="text-sm font-medium text-[hsl(var(--foreground))]">
+              What are you going back to do?
+            </label>
+            <p id="bypass-reason-hint" className="mt-1 text-xs leading-5 text-[hsl(var(--muted-foreground))]">
+              A short reason is needed to continue to Instagram.
+            </p>
+            <input
+              id="bypass-reason"
+              type="text"
+              maxLength={200}
+              aria-required="true"
+              aria-invalid={Boolean(reasonError)}
+              aria-describedby={reasonError ? 'bypass-reason-hint bypass-reason-error' : 'bypass-reason-hint'}
+              value={bypassReason}
+              onChange={(event) => {
+                setBypassReason(event.target.value);
+                if (event.target.value.trim()) setReasonError('');
+              }}
+              disabled={choice.isPending || launchFallback}
+              placeholder="Write a short reason"
+              className="mt-2 min-h-12 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background)/.7)] px-4 text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] disabled:opacity-60"
+              data-testid="input-bypass-reason"
+            />
+            {reasonError && (
+              <p id="bypass-reason-error" className="mt-2 text-sm text-[hsl(var(--destructive))]" role="alert" data-testid="text-bypass-reason-error">
+                {reasonError}
+              </p>
+            )}
+          </div>
           <button onClick={() => decide('start_wind_down')} disabled={choice.isPending || launchFallback} className="flex min-h-[60px] w-full items-center justify-center gap-2 rounded-full bg-[hsl(var(--primary))] px-3 text-base font-semibold text-[hsl(var(--primary-foreground))] transition-colors hover:brightness-105 disabled:opacity-55 sm:gap-3 sm:px-6" data-testid="button-start-wind-down">
             {choice.isPending && choice.variables?.data.choice === 'start_wind_down' ? <LoaderCircle size={19} className="animate-spin" /> : <CircleCheck size={19} />}
             Start my wind-down <ArrowRight size={17} />
