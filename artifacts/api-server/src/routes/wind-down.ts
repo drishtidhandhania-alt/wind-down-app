@@ -334,18 +334,50 @@ router.post("/wind-down/pause-choice", async (req, res): Promise<void> => {
     return;
   }
 
-  const bypassExpiresAt =
-    parsed.data.choice === "continue_to_instagram"
-      ? new Date(Date.now() + 10 * 60 * 1000)
-      : null;
-  if (bypassExpiresAt) {
-    await db
-      .update(windDownTestersTable)
-      .set({ bypassExpiresAt })
-      .where(eq(windDownTestersTable.id, tester.id));
+  const isBypass = parsed.data.choice === "continue_to_instagram";
+  const reason = parsed.data.reason?.trim();
+  if (isBypass && !reason) {
+    res.status(400).json({
+      error: "A short reason is required to continue to Instagram.",
+    });
+    return;
   }
-  await recordEvent(tester.id, "pause_choice", {
-    choice: parsed.data.choice,
+  if (isBypass && !tester.userId) {
+    res.status(409).json({
+      error: "Connect this private tester to your account in Setup first.",
+    });
+    return;
+  }
+
+  const choiceAt = new Date();
+  const bypassExpiresAt =
+    isBypass ? new Date(choiceAt.getTime() + 10 * 60 * 1000) : null;
+  await db.transaction(async (tx) => {
+    if (bypassExpiresAt) {
+      await tx
+        .update(windDownTestersTable)
+        .set({ bypassExpiresAt })
+        .where(eq(windDownTestersTable.id, tester.id));
+      await tx.insert(windDownSessionsTable).values({
+        id: randomUUID(),
+        userId: tester.userId!,
+        routineId: null,
+        startedAt: choiceAt,
+        endedAt: choiceAt,
+        outcome: "bypass",
+        minutesDelayed: null,
+        note: reason!,
+      });
+    }
+
+    await tx.insert(windDownEventsTable).values({
+      testerId: tester.id,
+      eventType: "pause_choice",
+      details: {
+        choice: parsed.data.choice,
+        ...(isBypass ? { reason: reason! } : {}),
+      },
+    });
   });
 
   res.json(

@@ -587,6 +587,10 @@ components:
         choice:
           type: string
           enum: [start_wind_down, continue_to_instagram]
+        reason:
+          type: string
+          maxLength: 200
+          description: Required when choice is continue_to_instagram; omitted for start_wind_down.
       required: [choice]
     PauseChoiceResult:
       type: object

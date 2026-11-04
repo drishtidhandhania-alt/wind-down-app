@@ -9,4 +9,9 @@ import type { PauseChoiceInputChoice } from './pauseChoiceInputChoice';
 
 export interface PauseChoiceInput {
   choice: PauseChoiceInputChoice;
+  /**
+     * Required when choice is continue_to_instagram; omitted for start_wind_down.
+     * @maxLength 200
+     */
+  reason?: string;
 }
