@@ -1,5 +1,0 @@
-From https://github.com/drishtidhandhania-alt/wind-down-app
-   02eab13..81d8cd2  main       -> origin/main
-Switched to a new branch 'feature/find-sort-sessions'
-branch 'feature/find-sort-sessions' set up to track 'origin/main'.
-READY
