@@ -71,6 +71,24 @@ export const windDownSessionsTable = pgTable("wind_down_sessions", {
   note: text("note"),
 });
 
+export const starsTable = pgTable("stars", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => usersTable.id, { onDelete: "cascade" }),
+  sessionId: text("session_id")
+    .notNull()
+    .references(() => windDownSessionsTable.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+}, (table) => [
+  uniqueIndex("stars_user_id_session_id_unique").on(
+    table.userId,
+    table.sessionId,
+  ),
+]);
+
 export const insertWindDownTesterSchema = createInsertSchema(windDownTestersTable).omit({
   id: true,
   createdAt: true,
