@@ -20,6 +20,9 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AuthCredentials,
+  AuthResult,
+  AuthUser,
   HealthStatus,
   PauseChoiceInput,
   PauseChoiceResult,
@@ -29,7 +32,10 @@ import type {
   TesterCreateInput,
   TesterCreated,
   TesterSettingsInput,
-  TesterState
+  TesterState,
+  WindDownSession,
+  WindDownSessionCreateInput,
+  WindDownSessionUpdateInput
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -136,6 +142,333 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
 
 
 
+
+export const getSignUpUrl = () => {
+
+
+
+
+  return `/api/auth/signup`
+}
+
+/**
+ * @summary Create an account and sign in
+ */
+export const signUp = async (authCredentials: AuthCredentials, options?: Parameters<typeof customFetch>[1]): Promise<AuthResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AuthResult>(getSignUpUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(authCredentials)
+  }
+);}
+
+
+
+
+
+export const getSignUpMutationKey = () => ['signUp'] as const;
+
+export const getSignUpMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof signUp>>, TError,SignUpMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof signUp>>, TError,SignUpMutationVariables, TContext> => {
+
+const mutationKey = getSignUpMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof signUp>>, SignUpMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  signUp(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SignUpMutationResult = NonNullable<Awaited<ReturnType<typeof signUp>>>
+    export type SignUpMutationBody = BodyType<AuthCredentials>
+    export type SignUpMutationError = ErrorType<void>
+    export type SignUpMutationVariables = {data: BodyType<AuthCredentials>}
+
+    /**
+ * @summary Create an account and sign in
+ */
+export const useSignUp = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof signUp>>, TError,SignUpMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof signUp>>,
+        TError,
+        SignUpMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSignUpMutationOptions(options));
+    }
+
+export const getLogInUrl = () => {
+
+
+
+
+  return `/api/auth/login`
+}
+
+/**
+ * @summary Sign in to an account
+ */
+export const logIn = async (authCredentials: AuthCredentials, options?: Parameters<typeof customFetch>[1]): Promise<AuthResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AuthResult>(getLogInUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(authCredentials)
+  }
+);}
+
+
+
+
+
+export const getLogInMutationKey = () => ['logIn'] as const;
+
+export const getLogInMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logIn>>, TError,LogInMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof logIn>>, TError,LogInMutationVariables, TContext> => {
+
+const mutationKey = getLogInMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof logIn>>, LogInMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  logIn(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LogInMutationResult = NonNullable<Awaited<ReturnType<typeof logIn>>>
+    export type LogInMutationBody = BodyType<AuthCredentials>
+    export type LogInMutationError = ErrorType<void>
+    export type LogInMutationVariables = {data: BodyType<AuthCredentials>}
+
+    /**
+ * @summary Sign in to an account
+ */
+export const useLogIn = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logIn>>, TError,LogInMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof logIn>>,
+        TError,
+        LogInMutationVariables,
+        TContext
+      > => {
+      return useMutation(getLogInMutationOptions(options));
+    }
+
+export const getGetCurrentUserUrl = () => {
+
+
+
+
+  return `/api/auth/me`
+}
+
+/**
+ * @summary Return the signed-in account
+ */
+export const getCurrentUser = async ( options?: Parameters<typeof customFetch>[1]): Promise<AuthUser> => {
+
+  return customFetch<AuthUser>(getGetCurrentUserUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCurrentUserQueryKey = () => {
+    return [
+    `/api/auth/me`
+    ] as const;
+    }
+
+
+export const getGetCurrentUserQueryOptions = <TData = Awaited<ReturnType<typeof getCurrentUser>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCurrentUser>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCurrentUserQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCurrentUser>>> = ({ signal }) => getCurrentUser({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCurrentUser>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCurrentUserQueryResult = NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>
+export type GetCurrentUserQueryError = ErrorType<void>
+
+
+/**
+ * @summary Return the signed-in account
+ */
+
+export function useGetCurrentUser<TData = Awaited<ReturnType<typeof getCurrentUser>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCurrentUser>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCurrentUserQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getLogOutUrl = () => {
+
+
+
+
+  return `/api/auth/logout`
+}
+
+/**
+ * @summary End the current session
+ */
+export const logOut = async ( options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getLogOutUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getLogOutMutationKey = () => ['logOut'] as const;
+
+export const getLogOutMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logOut>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof logOut>>, TError,void, TContext> => {
+
+const mutationKey = getLogOutMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof logOut>>, void> = () => {
+
+
+          return  logOut(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LogOutMutationResult = NonNullable<Awaited<ReturnType<typeof logOut>>>
+
+    export type LogOutMutationError = ErrorType<unknown>
+
+
+    /**
+ * @summary End the current session
+ */
+export const useLogOut = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logOut>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof logOut>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getLogOutMutationOptions(options));
+    }
 
 export const getCreateWindDownTesterUrl = () => {
 
@@ -639,5 +972,410 @@ export const useCompleteWindDownRoutine = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getCompleteWindDownRoutineMutationOptions(options));
+    }
+
+export const getGetWindDownSessionUrl = (sessionId: string,) => {
+
+
+
+
+  return `/api/wind-down/sessions/${sessionId}`
+}
+
+/**
+ * @summary Read a session belonging to the signed-in user
+ */
+export const getWindDownSession = async (sessionId: string, options?: Parameters<typeof customFetch>[1]): Promise<WindDownSession> => {
+
+  return customFetch<WindDownSession>(getGetWindDownSessionUrl(sessionId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWindDownSessionQueryKey = (sessionId: string,) => {
+    return [
+    `/api/wind-down/sessions/${sessionId}`
+    ] as const;
+    }
+
+
+export const getGetWindDownSessionQueryOptions = <TData = Awaited<ReturnType<typeof getWindDownSession>>, TError = ErrorType<void>>(sessionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWindDownSession>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWindDownSessionQueryKey(sessionId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWindDownSession>>> = ({ signal }) => getWindDownSession(sessionId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: sessionId !== null && sessionId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWindDownSession>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWindDownSessionQueryResult = NonNullable<Awaited<ReturnType<typeof getWindDownSession>>>
+export type GetWindDownSessionQueryError = ErrorType<void>
+
+
+/**
+ * @summary Read a session belonging to the signed-in user
+ */
+
+export function useGetWindDownSession<TData = Awaited<ReturnType<typeof getWindDownSession>>, TError = ErrorType<void>>(
+ sessionId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWindDownSession>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWindDownSessionQueryOptions(sessionId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateWindDownSessionUrl = (sessionId: string,) => {
+
+
+
+
+  return `/api/wind-down/sessions/${sessionId}`
+}
+
+/**
+ * @summary Update a session belonging to the signed-in user
+ */
+export const updateWindDownSession = async (sessionId: string,
+    windDownSessionUpdateInput: WindDownSessionUpdateInput, options?: Parameters<typeof customFetch>[1]): Promise<WindDownSession> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<WindDownSession>(getUpdateWindDownSessionUrl(sessionId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(windDownSessionUpdateInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateWindDownSessionMutationKey = () => ['updateWindDownSession'] as const;
+
+export const getUpdateWindDownSessionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateWindDownSession>>, TError,UpdateWindDownSessionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateWindDownSession>>, TError,UpdateWindDownSessionMutationVariables, TContext> => {
+
+const mutationKey = getUpdateWindDownSessionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateWindDownSession>>, UpdateWindDownSessionMutationVariables> = (props) => {
+          const {sessionId,data} = props ?? {};
+
+          return  updateWindDownSession(sessionId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateWindDownSessionMutationResult = NonNullable<Awaited<ReturnType<typeof updateWindDownSession>>>
+    export type UpdateWindDownSessionMutationBody = BodyType<WindDownSessionUpdateInput>
+    export type UpdateWindDownSessionMutationError = ErrorType<void>
+    export type UpdateWindDownSessionMutationVariables = {sessionId: string;data: BodyType<WindDownSessionUpdateInput>}
+
+    /**
+ * @summary Update a session belonging to the signed-in user
+ */
+export const useUpdateWindDownSession = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateWindDownSession>>, TError,UpdateWindDownSessionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateWindDownSession>>,
+        TError,
+        UpdateWindDownSessionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateWindDownSessionMutationOptions(options));
+    }
+
+export const getDeleteWindDownSessionUrl = (sessionId: string,) => {
+
+
+
+
+  return `/api/wind-down/sessions/${sessionId}`
+}
+
+/**
+ * @summary Delete a session belonging to the signed-in user
+ */
+export const deleteWindDownSession = async (sessionId: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteWindDownSessionUrl(sessionId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteWindDownSessionMutationKey = () => ['deleteWindDownSession'] as const;
+
+export const getDeleteWindDownSessionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteWindDownSession>>, TError,DeleteWindDownSessionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteWindDownSession>>, TError,DeleteWindDownSessionMutationVariables, TContext> => {
+
+const mutationKey = getDeleteWindDownSessionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteWindDownSession>>, DeleteWindDownSessionMutationVariables> = (props) => {
+          const {sessionId} = props ?? {};
+
+          return  deleteWindDownSession(sessionId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteWindDownSessionMutationResult = NonNullable<Awaited<ReturnType<typeof deleteWindDownSession>>>
+
+    export type DeleteWindDownSessionMutationError = ErrorType<void>
+    export type DeleteWindDownSessionMutationVariables = {sessionId: string}
+
+    /**
+ * @summary Delete a session belonging to the signed-in user
+ */
+export const useDeleteWindDownSession = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteWindDownSession>>, TError,DeleteWindDownSessionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteWindDownSession>>,
+        TError,
+        DeleteWindDownSessionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteWindDownSessionMutationOptions(options));
+    }
+
+export const getListWindDownSessionsUrl = () => {
+
+
+
+
+  return `/api/wind-down/sessions`
+}
+
+/**
+ * @summary List sessions belonging to the signed-in user
+ */
+export const listWindDownSessions = async ( options?: Parameters<typeof customFetch>[1]): Promise<WindDownSession[]> => {
+
+  return customFetch<WindDownSession[]>(getListWindDownSessionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListWindDownSessionsQueryKey = () => {
+    return [
+    `/api/wind-down/sessions`
+    ] as const;
+    }
+
+
+export const getListWindDownSessionsQueryOptions = <TData = Awaited<ReturnType<typeof listWindDownSessions>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWindDownSessions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListWindDownSessionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listWindDownSessions>>> = ({ signal }) => listWindDownSessions({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listWindDownSessions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListWindDownSessionsQueryResult = NonNullable<Awaited<ReturnType<typeof listWindDownSessions>>>
+export type ListWindDownSessionsQueryError = ErrorType<void>
+
+
+/**
+ * @summary List sessions belonging to the signed-in user
+ */
+
+export function useListWindDownSessions<TData = Awaited<ReturnType<typeof listWindDownSessions>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listWindDownSessions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListWindDownSessionsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateWindDownSessionUrl = () => {
+
+
+
+
+  return `/api/wind-down/sessions`
+}
+
+/**
+ * @summary Create a session for the signed-in user
+ */
+export const createWindDownSession = async (windDownSessionCreateInput: WindDownSessionCreateInput, options?: Parameters<typeof customFetch>[1]): Promise<WindDownSession> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<WindDownSession>(getCreateWindDownSessionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(windDownSessionCreateInput)
+  }
+);}
+
+
+
+
+
+export const getCreateWindDownSessionMutationKey = () => ['createWindDownSession'] as const;
+
+export const getCreateWindDownSessionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createWindDownSession>>, TError,CreateWindDownSessionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createWindDownSession>>, TError,CreateWindDownSessionMutationVariables, TContext> => {
+
+const mutationKey = getCreateWindDownSessionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createWindDownSession>>, CreateWindDownSessionMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createWindDownSession(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateWindDownSessionMutationResult = NonNullable<Awaited<ReturnType<typeof createWindDownSession>>>
+    export type CreateWindDownSessionMutationBody = BodyType<WindDownSessionCreateInput>
+    export type CreateWindDownSessionMutationError = ErrorType<void>
+    export type CreateWindDownSessionMutationVariables = {data: BodyType<WindDownSessionCreateInput>}
+
+    /**
+ * @summary Create a session for the signed-in user
+ */
+export const useCreateWindDownSession = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createWindDownSession>>, TError,CreateWindDownSessionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createWindDownSession>>,
+        TError,
+        CreateWindDownSessionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateWindDownSessionMutationOptions(options));
     }
 

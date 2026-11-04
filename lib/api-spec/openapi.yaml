@@ -246,6 +246,97 @@ paths:
           description: Signed out
         "404":
           description: Session not found for this user
+    patch:
+      operationId: updateWindDownSession
+      tags: [wind-down]
+      summary: Update a session belonging to the signed-in user
+      security:
+        - CookieSession: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WindDownSessionUpdateInput"
+      responses:
+        "200":
+          description: Updated session owned by the signed-in user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WindDownSession"
+        "400":
+          description: Invalid session fields
+        "401":
+          description: Signed out
+        "404":
+          description: Session not found for this user
+    delete:
+      operationId: deleteWindDownSession
+      tags: [wind-down]
+      summary: Delete a session belonging to the signed-in user
+      security:
+        - CookieSession: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Session deleted
+        "401":
+          description: Signed out
+        "404":
+          description: Session not found for this user
+  /wind-down/sessions:
+    get:
+      operationId: listWindDownSessions
+      tags: [wind-down]
+      summary: List sessions belonging to the signed-in user
+      security:
+        - CookieSession: []
+      responses:
+        "200":
+          description: Sessions owned by the signed-in user
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WindDownSession"
+        "401":
+          description: Signed out
+    post:
+      operationId: createWindDownSession
+      tags: [wind-down]
+      summary: Create a session for the signed-in user
+      security:
+        - CookieSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WindDownSessionCreateInput"
+      responses:
+        "201":
+          description: Created session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WindDownSession"
+        "400":
+          description: Invalid session fields
+        "401":
+          description: Signed out
 components:
   securitySchemes:
     TesterToken:
@@ -305,6 +396,46 @@ components:
         note:
           type: ["string", "null"]
       required: [id, userId, routineId, startedAt, endedAt, outcome, minutesDelayed, note]
+    WindDownSessionCreateInput:
+      type: object
+      additionalProperties: false
+      properties:
+        routineId:
+          type: ["string", "null"]
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: ["string", "null"]
+          format: date-time
+        outcome:
+          type: ["string", "null"]
+        minutesDelayed:
+          type: ["integer", "null"]
+          minimum: 0
+        note:
+          type: ["string", "null"]
+      required: [startedAt]
+    WindDownSessionUpdateInput:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        routineId:
+          type: ["string", "null"]
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: ["string", "null"]
+          format: date-time
+        outcome:
+          type: ["string", "null"]
+        minutesDelayed:
+          type: ["integer", "null"]
+          minimum: 0
+        note:
+          type: ["string", "null"]
     HealthStatus:
       type: object
       properties:
