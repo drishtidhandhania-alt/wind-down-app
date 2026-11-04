@@ -124,7 +124,7 @@ export default function SetupPage() {
 
   return (
     <div className="page-enter">
-      <PageHeading eyebrow="Private by design" title="Your phone, your pause." description="This space belongs to you. A private tester token connects your iPhone Shortcut to your bedtime window." />
+      <PageHeading eyebrow="Private by design" title="Your phone, your pause." description="Your account holds your Wind Down settings and sessions. Set up this device to connect this iPhone’s Shortcut to your account with a private token." />
       <div className="grid gap-5 lg:grid-cols-[.92fr_1.08fr]">
         <section className="rounded-[1.5rem] border border-[hsl(var(--card-border)/.66)] bg-[hsl(var(--card))] p-6 sm:p-8">
           <div className="flex items-start gap-4">
@@ -140,6 +140,14 @@ export default function SetupPage() {
                 <button onClick={copyToken} className="grid min-h-12 min-w-12 place-items-center rounded-xl border border-[hsl(var(--border))] hover:bg-[hsl(var(--secondary))]" aria-label="Copy private token" data-testid="button-copy-token">{copied ? <Check size={17} /> : <Clipboard size={17} />}</button>
               </div>
               <p className="mt-3 flex items-center gap-2 text-xs text-[hsl(var(--primary))]" role="status"><ShieldCheck size={14} />{tester.isLoading ? 'Checking your connection…' : tester.isError ? 'Token not verified yet.' : 'Connected on this device.'}</p>
+              {tester.isSuccess && (
+                <div className="mt-4 rounded-xl bg-[hsl(var(--background)/.45)] p-4" data-testid="device-setup-complete">
+                  <p className="text-sm font-medium">Next, head to Tonight to set your bedtime and try your Shortcut.</p>
+                  <Link href="/" className="mt-3 inline-flex min-h-11 items-center justify-center rounded-full bg-[hsl(var(--primary))] px-5 text-sm font-semibold text-[hsl(var(--primary-foreground))] no-underline" data-testid="link-setup-tonight">
+                    Go to Tonight
+                  </Link>
+                </div>
+              )}
               {tester.isError && <button onClick={() => tester.refetch()} className="mt-3 rounded-full border border-[hsl(var(--border))] px-4 py-2 text-xs font-medium hover:bg-[hsl(var(--secondary))]" data-testid="button-retry-token">Retry token check</button>}
               <button onClick={() => { removeTesterToken(userId); setToken(''); setTokenInput(''); setTokenReady(false); setShortcutCheck({ status: 'idle' }); setRestoreMessage('This device no longer has a saved token.'); queryClient.removeQueries({ queryKey: getGetWindDownTesterQueryKey() }); }} className="mt-5 inline-flex items-center gap-2 text-sm text-[hsl(var(--muted-foreground))] underline decoration-[hsl(var(--border))] underline-offset-4 hover:text-[hsl(var(--foreground))]" data-testid="button-remove-token"><RotateCcw size={14} /> Remove token from this device</button>
             </div>
@@ -147,7 +155,7 @@ export default function SetupPage() {
             <>
               <button onClick={create} disabled={createTester.isPending} className="mt-7 flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-[hsl(var(--primary))] px-3 font-semibold text-[hsl(var(--primary-foreground))] disabled:opacity-60 sm:px-5" data-testid="button-create-token">
                 {createTester.isPending ? <LoaderCircle size={18} className="animate-spin" /> : <LockKeyhole size={17} />}
-                {createTester.isPending ? 'Making your private space…' : 'Create a private tester'}
+                {createTester.isPending ? 'Setting up this device…' : 'Set up this device'}
               </button>
               {createTester.isError && <p className="mt-3 text-sm text-[hsl(var(--destructive))]" role="alert">We couldn’t create the token. Please try again.</p>}
               <div className="my-6 flex items-center gap-3 font-mono text-xs text-[hsl(var(--muted-foreground))]"><span className="h-px flex-1 bg-[hsl(var(--border))]" />Or restore<span className="h-px flex-1 bg-[hsl(var(--border))]" /></div>
