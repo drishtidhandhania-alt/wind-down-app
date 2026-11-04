@@ -2,9 +2,26 @@ import { useEffect, useMemo, useState } from 'react';
 import { Check, Clipboard, KeyRound, LoaderCircle, LockKeyhole, RotateCcw, ShieldCheck } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getGetWindDownTesterQueryKey, useCreateWindDownTester, useGetWindDownTester } from '@workspace/api-client-react';
+import { Link } from 'wouter';
 import { PageHeading } from '@/components/shell';
 import { getTesterToken, hasTesterToken, removeTesterToken, storeTesterToken, testerRequest } from '@/lib/tester-api';
+import { checkShortcutConnection, type ShortcutCheckResult } from '@/lib/shortcut-check';
 import { useCurrentUser } from '@/lib/auth-api';
+
+const shortcutReasonLabels = {
+  outside_window: 'Outside the wind-down window',
+  active_bypass: 'Your 10-minute bypass is active',
+  test_mode: 'Test mode is active',
+  wind_down_window: 'Inside the wind-down window',
+} as const;
+
+const shortcutErrorMessages = {
+  missing_token: 'Create or restore your private tester token before testing the connection.',
+  token_rejected: 'The server did not accept this token. Restore your private token on this device and try again.',
+  server_error: 'The server could not check the Shortcut request right now. Please try again.',
+  network_error: 'We could not reach the server. Check your connection and try again.',
+  invalid_response: 'The server returned an unexpected response. Please try again.',
+} as const;
 
 export default function SetupPage() {
   const auth = useCurrentUser();
@@ -16,12 +33,16 @@ export default function SetupPage() {
   const [copied, setCopied] = useState(false);
   const [restoreMessage, setRestoreMessage] = useState('');
   const [restoreError, setRestoreError] = useState('');
+  const [shortcutCheck, setShortcutCheck] = useState<
+    ShortcutCheckResult | { status: 'idle' | 'loading' }
+  >({ status: 'idle' });
   const queryClient = useQueryClient();
   useEffect(() => {
     const saved = getTesterToken(userId) || '';
     setToken(saved);
     setTokenInput(saved);
     setTokenReady(Boolean(saved));
+    setShortcutCheck({ status: 'idle' });
   }, [userId]);
 
   const tester = useGetWindDownTester({
@@ -41,6 +62,7 @@ export default function SetupPage() {
         setToken(created.token);
         setTokenInput(created.token);
         setTokenReady(true);
+        setShortcutCheck({ status: 'idle' });
         queryClient.setQueryData(getGetWindDownTesterQueryKey(), {
           bedtime: created.bedtime,
           morningEnd: created.morningEnd,
@@ -66,6 +88,7 @@ export default function SetupPage() {
     storeTesterToken(userId, clean);
     setToken(clean);
     setTokenReady(true);
+    setShortcutCheck({ status: 'idle' });
     setRestoreMessage('Checking this private token…');
     queryClient.removeQueries({ queryKey: getGetWindDownTesterQueryKey() });
     window.setTimeout(() => queryClient.invalidateQueries({ queryKey: getGetWindDownTesterQueryKey() }), 0);
@@ -86,6 +109,15 @@ export default function SetupPage() {
       setRevealed(true);
       setCopied(false);
     }
+  };
+
+  const testShortcutConnection = async () => {
+    setShortcutCheck({ status: 'loading' });
+    const result = await checkShortcutConnection(
+      token,
+      window.location.origin,
+    );
+    setShortcutCheck(result);
   };
 
   const hasToken = Boolean(token);
@@ -109,7 +141,7 @@ export default function SetupPage() {
               </div>
               <p className="mt-3 flex items-center gap-2 text-xs text-[hsl(var(--primary))]" role="status"><ShieldCheck size={14} />{tester.isLoading ? 'Checking your connection…' : tester.isError ? 'Token not verified yet.' : 'Connected on this device.'}</p>
               {tester.isError && <button onClick={() => tester.refetch()} className="mt-3 rounded-full border border-[hsl(var(--border))] px-4 py-2 text-xs font-medium hover:bg-[hsl(var(--secondary))]" data-testid="button-retry-token">Retry token check</button>}
-              <button onClick={() => { removeTesterToken(userId); setToken(''); setTokenInput(''); setTokenReady(false); setRestoreMessage('This device no longer has a saved token.'); queryClient.removeQueries({ queryKey: getGetWindDownTesterQueryKey() }); }} className="mt-5 inline-flex items-center gap-2 text-sm text-[hsl(var(--muted-foreground))] underline decoration-[hsl(var(--border))] underline-offset-4 hover:text-[hsl(var(--foreground))]" data-testid="button-remove-token"><RotateCcw size={14} /> Remove token from this device</button>
+              <button onClick={() => { removeTesterToken(userId); setToken(''); setTokenInput(''); setTokenReady(false); setShortcutCheck({ status: 'idle' }); setRestoreMessage('This device no longer has a saved token.'); queryClient.removeQueries({ queryKey: getGetWindDownTesterQueryKey() }); }} className="mt-5 inline-flex items-center gap-2 text-sm text-[hsl(var(--muted-foreground))] underline decoration-[hsl(var(--border))] underline-offset-4 hover:text-[hsl(var(--foreground))]" data-testid="button-remove-token"><RotateCcw size={14} /> Remove token from this device</button>
             </div>
           ) : (
             <>
@@ -129,6 +161,45 @@ export default function SetupPage() {
             </>
           )}
           {hasToken && restoreMessage && <p className="mt-3 text-xs text-[hsl(var(--muted-foreground))]" role="status">{restoreMessage}</p>}
+          <div className="mt-6 border-t border-[hsl(var(--border))] pt-5">
+            <h3 className="font-display text-xl">Test Shortcut connection</h3>
+            <p className="mt-2 text-xs leading-5 text-[hsl(var(--muted-foreground))]">
+              Sends the same token-only check as your Shortcut. The result is recorded like a Shortcut check.
+            </p>
+            <button
+              type="button"
+              onClick={testShortcutConnection}
+              disabled={shortcutCheck.status === 'loading'}
+              className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-[hsl(var(--border))] px-4 text-sm font-medium hover:bg-[hsl(var(--secondary))] disabled:cursor-wait disabled:opacity-60"
+              data-testid="button-test-shortcut-connection"
+            >
+              {shortcutCheck.status === 'loading' && <LoaderCircle size={16} className="animate-spin" />}
+              {shortcutCheck.status === 'loading' ? 'Checking connection…' : 'Test Shortcut connection'}
+            </button>
+            {shortcutCheck.status === 'error' && (
+              <p className="mt-3 text-sm text-[hsl(var(--destructive))]" role="alert" data-testid="text-shortcut-check-error">
+                {shortcutErrorMessages[shortcutCheck.code]}
+              </p>
+            )}
+            {shortcutCheck.status === 'decision' && (
+              <div className="mt-4 rounded-xl border border-[hsl(var(--card-border)/.55)] bg-[hsl(var(--background)/.55)] p-4 text-sm" role="status" data-testid="result-shortcut-check">
+                <p>
+                  Decision:{' '}
+                  <strong className="font-semibold text-[hsl(var(--foreground))]">
+                    {shortcutCheck.decision === 'allow' ? 'Allow' : 'Pause'}
+                  </strong>
+                </p>
+                <p className="mt-1 text-[hsl(var(--muted-foreground))]">
+                  Reason: {shortcutReasonLabels[shortcutCheck.reason]}
+                </p>
+                {shortcutCheck.decision === 'pause' && shortcutCheck.hasSafePauseLink && (
+                  <Link href="/pause" className="mt-3 inline-flex min-h-10 items-center underline underline-offset-4" data-testid="link-shortcut-pause">
+                    Open pause page
+                  </Link>
+                )}
+              </div>
+            )}
+          </div>
         </section>
 
         <section className="rounded-[1.5rem] border border-[hsl(var(--card-border)/.66)] bg-[hsl(var(--card))] p-6 sm:p-8">
