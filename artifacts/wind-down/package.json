@@ -9,6 +9,7 @@
     "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
     "test:dashboard": "node --test src/lib/dashboard-stats.test.ts",
     "test:shortcut-check": "node --test src/lib/shortcut-check.test.ts",
+    "test:save-errors": "node --test src/lib/save-errors.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {

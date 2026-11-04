@@ -6,6 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getGetWindDownTesterQueryKey } from '@workspace/api-client-react';
 import { testerRequest } from '@/lib/tester-api';
 import { useCurrentUser } from '@/lib/auth-api';
+import { getServerErrorMessage } from '@/lib/save-errors';
 
 export default function PausePage() {
   const [, setLocation] = useLocation();
@@ -97,7 +98,7 @@ export default function PausePage() {
             {choice.isPending && choice.variables?.data.choice === 'continue_to_instagram' ? 'Saving your choice…' : 'Continue to Instagram'}
           </button>
         </div>
-        {choice.isError && <p className="mt-4 text-sm text-[hsl(var(--destructive))]" role="alert">Your choice didn’t save. Nothing has opened; please try again.</p>}
+        {choice.isError && <p className="mt-4 text-sm text-[hsl(var(--destructive))]" role="alert">{getServerErrorMessage(choice.error, 'Your choice didn’t save. Nothing has opened; please try again.')}</p>}
         {launchFallback && (
           <div className="mt-6 rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--background)/.45)] p-5 text-left">
             {message && <p className="text-sm leading-6 text-[hsl(var(--muted-foreground))]" role="status">{message}</p>}

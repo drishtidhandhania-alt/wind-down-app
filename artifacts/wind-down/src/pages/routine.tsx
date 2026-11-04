@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getListWindDownSessionsQueryKey, useCompleteWindDownRoutine, RoutineCompleteInputCompletedStepsItem } from '@workspace/api-client-react';
 import { testerRequest } from '@/lib/tester-api';
 import { useCurrentUser } from '@/lib/auth-api';
+import { getServerErrorMessage, needsAccountGuidance } from '@/lib/save-errors';
 
 const steps: { id: RoutineCompleteInputCompletedStepsItem; title: string; detail: string; icon: typeof Smartphone }[] = [
   { id: 'phone_on_charger', title: 'Phone on its charger', detail: 'Let it rest somewhere out of reach.', icon: Smartphone },
@@ -130,7 +131,24 @@ export default function RoutinePage() {
               {!completion.isPending && <ArrowRight size={17} />}
             </button>
             <p className="mt-3 text-center text-xs text-[hsl(var(--muted-foreground))]">{checked.length === steps.length ? 'Ready when you are.' : `${checked.length} of 3 complete — check each step before finishing.`}</p>
-            {completion.isError && <p className="mt-3 text-center text-sm text-[hsl(var(--destructive))]" role="alert">Your routine didn’t save. Your steps are still here; try again.</p>}
+            {completion.isError && (
+              <div className="mt-3 text-center text-sm text-[hsl(var(--destructive))]" role="alert">
+                <p>{getServerErrorMessage(completion.error, 'Your routine didn’t save. Your steps are still here; try again.')}</p>
+                {needsAccountGuidance(completion.error) && (
+                  <p className="mt-2 text-[hsl(var(--muted-foreground))]">
+                    Your checked steps are saved on this device.{' '}
+                    <Link
+                      href="/signup?next=%2Froutine"
+                      className="font-medium text-[hsl(var(--primary))] underline underline-offset-4"
+                      data-testid="link-routine-account"
+                    >
+                      Create an account or sign in
+                    </Link>{' '}
+                    to save this routine to your history.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </>
       )}
