@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react';
 import { Clock3, LoaderCircle, Plus } from 'lucide-react';
 import { Link } from 'wouter';
 import { getListWindDownSessionsQueryKey, useListWindDownSessions } from '@workspace/api-client-react';
@@ -6,8 +7,12 @@ import { SessionCard } from '@/components/session-card';
 import { useCurrentUser } from '@/lib/auth-api';
 import { useSessionStars } from '@/lib/session-stars';
 
+type SessionSortOrder = 'newest' | 'oldest';
+
 export default function SessionHistoryPage() {
   const auth = useCurrentUser();
+  const [searchText, setSearchText] = useState('');
+  const [sortOrder, setSortOrder] = useState<SessionSortOrder>('newest');
   const stars = useSessionStars(auth.data?.id);
   const sessions = useListWindDownSessions({
     query: {
@@ -15,6 +20,20 @@ export default function SessionHistoryPage() {
       queryKey: [...getListWindDownSessionsQueryKey(), auth.data?.id],
     },
   });
+  const visibleSessions = useMemo(() => {
+    const search = searchText.trim().toLowerCase();
+    return [...(sessions.data ?? [])]
+      .filter((session) => {
+        if (!search) return true;
+        return [session.note, session.outcome, session.routineId]
+          .some((value) => value?.toLowerCase().includes(search));
+      })
+      .sort((left, right) => {
+        const difference =
+          new Date(left.startedAt).getTime() - new Date(right.startedAt).getTime();
+        return sortOrder === 'newest' ? -difference : difference;
+      });
+  }, [searchText, sessions.data, sortOrder]);
 
   return (
     <div className="page-enter">
@@ -53,6 +72,36 @@ export default function SessionHistoryPage() {
         </p>
       )}
 
+      {!sessions.isLoading && !sessions.isError && Boolean(sessions.data?.length) && (
+        <section className="mb-5 grid gap-3 rounded-[1.25rem] border border-[hsl(var(--card-border)/.66)] bg-[hsl(var(--card))] p-4 sm:grid-cols-[minmax(0,1fr)_12rem] sm:items-end">
+          <label htmlFor="session-search" className="block text-sm font-medium">
+            Find a session
+            <input
+              id="session-search"
+              type="search"
+              value={searchText}
+              onChange={(event) => setSearchText(event.target.value)}
+              placeholder="Note, outcome, or routine ID"
+              className="mt-2 block min-h-11 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background)/.65)] px-4 text-base text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))]"
+              data-testid="input-session-search"
+            />
+          </label>
+          <label htmlFor="session-sort" className="block text-sm font-medium">
+            Sort by
+            <select
+              id="session-sort"
+              value={sortOrder}
+              onChange={(event) => setSortOrder(event.target.value as SessionSortOrder)}
+              className="mt-2 block min-h-11 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background)/.65)] px-3 text-base text-[hsl(var(--foreground))]"
+              data-testid="select-session-sort"
+            >
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+            </select>
+          </label>
+        </section>
+      )}
+
       {sessions.isLoading ? (
         <section className="flex min-h-40 items-center justify-center gap-3 rounded-[1.5rem] border border-[hsl(var(--card-border)/.66)] bg-[hsl(var(--card))] text-sm text-[hsl(var(--muted-foreground))]">
           <LoaderCircle size={18} className="animate-spin" />
@@ -71,9 +120,9 @@ export default function SessionHistoryPage() {
             Try again
           </button>
         </section>
-      ) : sessions.data?.length ? (
+      ) : sessions.data?.length && visibleSessions.length ? (
         <div className="grid gap-3">
-          {sessions.data.map((session) => (
+          {visibleSessions.map((session) => (
             <SessionCard
               key={session.id}
               session={session}
@@ -83,6 +132,21 @@ export default function SessionHistoryPage() {
             />
           ))}
         </div>
+      ) : sessions.data?.length ? (
+        <section className="rounded-[1.5rem] border border-[hsl(var(--card-border)/.66)] bg-[hsl(var(--card))] px-6 py-10 text-center sm:px-10 sm:py-12">
+          <h2 className="font-display text-2xl">Nothing matches that search.</h2>
+          <p className="mx-auto mt-2 max-w-md text-sm text-[hsl(var(--muted-foreground))]">
+            Try another word, or clear the search to see all your sessions.
+          </p>
+          <button
+            type="button"
+            onClick={() => setSearchText('')}
+            className="mt-6 inline-flex min-h-11 items-center justify-center rounded-full border border-[hsl(var(--border))] px-5 text-sm font-medium hover:bg-[hsl(var(--secondary))]"
+            data-testid="button-clear-session-search"
+          >
+            Clear search
+          </button>
+        </section>
       ) : (
         <section className="rounded-[1.5rem] border border-[hsl(var(--card-border)/.66)] bg-[hsl(var(--card))] px-6 py-10 text-center sm:px-10 sm:py-12">
           <div className="mx-auto grid size-12 place-items-center rounded-full bg-[hsl(var(--accent)/.1)] text-[hsl(var(--accent))]">
