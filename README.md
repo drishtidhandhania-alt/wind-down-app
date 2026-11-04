@@ -12,7 +12,7 @@ Wind Down is a mobile-first bedtime interruption app. It pairs with an iPhone Sh
 - A fixed three-step routine: put the phone on its charger, brush teeth, and read for five minutes.
 - A dashboard with total sessions, average recorded delay, completed sessions, and a seven-day chart.
 
-The app does not yet provide configurable routine templates. Installing and running the iPhone Personal Automation and confirming that Safari can reopen Instagram still require a real iPhone test. Five genuine history entries and a screenshot of real saved data are also still outstanding; synthetic test fixtures do not count as real entries.
+The app does not yet provide configurable routine templates. On November 4, 2026, the owner verified the iPhone Personal Automation on a physical iPhone: opening Instagram triggered Wind Down, choosing the 10-minute bypass with a short reason returned to Instagram, and completing the routine saved from the phone. The owner's account has seven genuine sessions: five retrospective entries with user-supplied approximate times (labeled retrospective, with `endedAt` null), plus two live app sessions—a routine completion on November 3 and a bypass with a short reason on November 4. A dashboard screenshot of the real saved data was captured and reviewed.
 
 ## Stack and data flow
 
@@ -80,4 +80,4 @@ pnpm run build
 - [PR #4 data-isolation red/green screenshots](generated-artifacts/data-isolation-red.jpg) and [green screenshot](generated-artifacts/data-isolation-green.jpg)
 - [PR #19 dashboard red/green report](generated-artifacts/dashboard/TEST.md), including links to its original logs and screenshots
 
-The Shortcut decision and website-side request have automated coverage, but desktop checks cannot verify the iPhone Personal Automation or reopening Instagram. The five genuine-entry requirement and real-data screenshot remain incomplete.
+The Shortcut decision and website-side request have automated coverage. Separately, on November 4, 2026, the owner verified the Instagram trigger, 10-minute bypass return, and routine save on a physical iPhone. The seven genuine sessions and reviewed real-data dashboard screenshot are complete; the device flow was user-verified, not automated or server-side verified.
