@@ -605,6 +605,10 @@ components:
       type: object
       additionalProperties: false
       properties:
+        startedAt:
+          type: string
+          format: date-time
+          description: Optional client-captured routine start time. Legacy clients may omit it.
         completedSteps:
           type: array
           items:

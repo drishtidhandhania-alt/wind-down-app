@@ -44,6 +44,8 @@ const ROUTINE_STEPS = [
   "read_five_minutes",
 ] as const;
 type RoutineStep = (typeof ROUTINE_STEPS)[number];
+const LEGACY_ROUTINE_COMPLETION_NOTE =
+  "Actual start time and duration were not recorded. This timestamp is when completion was logged.";
 
 function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
@@ -399,12 +401,31 @@ router.post("/wind-down/routine/complete", async (req, res): Promise<void> => {
     return;
   }
 
+  const bodyHasStartedAt =
+    typeof req.body === "object" &&
+    req.body !== null &&
+    Object.prototype.hasOwnProperty.call(req.body, "startedAt");
+  const rawStartedAt = bodyHasStartedAt ? req.body.startedAt : undefined;
+  if (bodyHasStartedAt && typeof rawStartedAt !== "string") {
+    res.status(400).json({ error: "Provide a valid routine start time." });
+    return;
+  }
+
   const parsed = CompleteWindDownRoutineBody.safeParse(req.body);
-  const completedSteps = parsed.success
-    ? [...new Set(parsed.data.completedSteps)]
-    : [];
+  if (!parsed.success) {
+    const invalidStartedAt = parsed.error.issues.some(
+      (issue) => issue.path[0] === "startedAt",
+    );
+    res.status(400).json({
+      error: invalidStartedAt
+        ? "Provide a valid routine start time."
+        : "Check all three routine steps before finishing.",
+    });
+    return;
+  }
+
+  const completedSteps = [...new Set(parsed.data.completedSteps)];
   if (
-    !parsed.success ||
     completedSteps.length !== ROUTINE_STEPS.length ||
     !ROUTINE_STEPS.every((step: RoutineStep) => completedSteps.includes(step))
   ) {
@@ -415,8 +436,43 @@ router.post("/wind-down/routine/complete", async (req, res): Promise<void> => {
   }
 
   const completedAt = new Date();
-  await recordEvent(tester.id, "routine_complete", {
-    completedSteps,
+  const suppliedStartedAt = parsed.data.startedAt;
+  if (
+    suppliedStartedAt &&
+    (!Number.isFinite(suppliedStartedAt.getTime()) ||
+      suppliedStartedAt.getTime() > completedAt.getTime())
+  ) {
+    res.status(400).json({
+      error: "Routine start time must not be later than completion.",
+    });
+    return;
+  }
+
+  const userId = tester.userId;
+  if (!userId) {
+    res.status(409).json({
+      error: "Connect this private tester to your account before saving a routine completion.",
+    });
+    return;
+  }
+
+  const startedAt = suppliedStartedAt ?? completedAt;
+  await db.transaction(async (tx) => {
+    await tx.insert(windDownEventsTable).values({
+      testerId: tester.id,
+      eventType: "routine_complete",
+      details: { completedSteps },
+    });
+    await tx.insert(windDownSessionsTable).values({
+      id: randomUUID(),
+      userId,
+      routineId: null,
+      startedAt,
+      endedAt: completedAt,
+      outcome: "routine_completed",
+      minutesDelayed: null,
+      note: suppliedStartedAt ? null : LEGACY_ROUTINE_COMPLETION_NOTE,
+    });
   });
 
   res.status(201).json(

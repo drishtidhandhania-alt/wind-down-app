@@ -24,6 +24,8 @@ type SessionDraft = {
 };
 
 type SessionFieldErrors = Partial<Record<'startedAt' | 'outcome', string>>;
+const LEGACY_ROUTINE_NOTE_PREFIX =
+  'Actual start time and duration were not recorded.';
 
 function toDateTimeLocal(value: string | null | undefined): string {
   if (!value) return '';
@@ -52,9 +54,12 @@ function createDraft(): SessionDraft {
 }
 
 function draftFromSession(session: WindDownSession): SessionDraft {
+  const isLegacyRoutineCompletion =
+    session.outcome === 'routine_completed' &&
+    session.note?.startsWith(LEGACY_ROUTINE_NOTE_PREFIX);
   return {
     routineId: session.routineId ?? '',
-    startedAt: toDateTimeLocal(session.startedAt),
+    startedAt: isLegacyRoutineCompletion ? '' : toDateTimeLocal(session.startedAt),
     endedAt: toDateTimeLocal(session.endedAt),
     outcome: session.outcome ?? '',
     minutesDelayed: session.minutesDelayed === null ? '' : String(session.minutesDelayed),

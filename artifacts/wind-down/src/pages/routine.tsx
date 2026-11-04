@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { ArrowLeft, ArrowRight, Check, LoaderCircle, Moon, Smartphone, Droplets, BookOpen } from 'lucide-react';
-import { useCompleteWindDownRoutine, RoutineCompleteInputCompletedStepsItem } from '@workspace/api-client-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { getListWindDownSessionsQueryKey, useCompleteWindDownRoutine, RoutineCompleteInputCompletedStepsItem } from '@workspace/api-client-react';
 import { testerRequest } from '@/lib/tester-api';
 import { useCurrentUser } from '@/lib/auth-api';
 
@@ -16,15 +17,23 @@ export default function RoutinePage() {
   const auth = useCurrentUser();
   const [checked, setChecked] = useState<RoutineCompleteInputCompletedStepsItem[]>([]);
   const [finished, setFinished] = useState(false);
+  const [routineStartedAt] = useState(() => new Date().toISOString());
   const completion = useCompleteWindDownRoutine({ request: testerRequest(auth.data?.id) });
+  const queryClient = useQueryClient();
 
   const toggle = (id: RoutineCompleteInputCompletedStepsItem) => {
     setChecked((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
   };
   const finish = () => {
-    completion.mutate({ data: { completedSteps: checked } }, {
-      onSuccess: () => setFinished(true),
-    });
+    completion.mutate(
+      { data: { completedSteps: checked, startedAt: routineStartedAt } },
+      {
+        onSuccess: async () => {
+          await queryClient.invalidateQueries({ queryKey: getListWindDownSessionsQueryKey() });
+          setFinished(true);
+        },
+      },
+    );
   };
 
   return (
@@ -35,7 +44,8 @@ export default function RoutinePage() {
           <div className="mx-auto grid size-16 place-items-center rounded-full bg-[hsl(var(--success)/.12)] text-[hsl(var(--success))] check-pop"><Check size={26} /></div>
           <p className="mt-7 font-mono text-xs font-medium text-[hsl(var(--success))]">That’s enough for tonight</p>
           <h1 className="font-display mt-3 text-4xl tracking-[-.025em]">You showed up.</h1>
-          <p className="mx-auto mt-4 max-w-sm text-base leading-7 text-[hsl(var(--muted-foreground))]">The routine is complete. Let the rest of the night be simple.</p>
+          <p className="mx-auto mt-4 max-w-sm text-base leading-7 text-[hsl(var(--muted-foreground))]">Your routine completion is saved to session history. Let the rest of the night be simple.</p>
+          <Link href="/sessions" className="mt-7 inline-flex min-h-12 items-center justify-center rounded-full border border-[hsl(var(--border))] px-6 text-sm font-medium text-inherit no-underline hover:bg-[hsl(var(--secondary))]" data-testid="link-routine-history">View session history</Link>
           <button onClick={() => setLocation('/')} className="mt-8 inline-flex min-h-14 items-center gap-2 rounded-full bg-[hsl(var(--primary))] px-7 font-semibold text-[hsl(var(--primary-foreground))]" data-testid="button-finish-routine">Finish for tonight <ArrowRight size={17} /></button>
         </section>
       ) : (

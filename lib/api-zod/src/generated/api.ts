@@ -165,6 +165,7 @@ export const SaveWindDownPauseChoiceResponse = zod.object({
  * @summary Record explicit completion of the bedtime routine
  */
 export const CompleteWindDownRoutineBody = zod.object({
+  "startedAt": zod.coerce.date().optional().describe('Optional client-captured routine start time. Legacy clients may omit it.'),
   "completedSteps": zod.array(zod.enum(['phone_on_charger', 'brush_teeth', 'read_five_minutes']))
 })
 
