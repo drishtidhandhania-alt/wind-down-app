@@ -1,0 +1,14 @@
+✔ averages three recorded delay values without changing the expected calculation (22.444386ms)
+✔ excludes null delay values and keeps a real zero in the average (1.006213ms)
+✔ returns empty-safe statistics and seven zero-count days when there are no sessions (1.096732ms)
+✔ counts only session start dates in the seven-day local calendar window (0.903468ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 321.35329
+
+Test command exit code: 0

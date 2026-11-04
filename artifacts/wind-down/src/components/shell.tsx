@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'wouter';
-import { ArrowUpRight, History, LogIn, LogOut, Moon, Settings2, Star } from 'lucide-react';
+import { ArrowUpRight, History, LayoutDashboard, LogIn, LogOut, Moon, Settings2, Star } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -8,6 +8,7 @@ import { clearActiveTesterScope } from '@/lib/tester-api';
 
 const nav = [
   { href: '/', label: 'Tonight', icon: Moon },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/sessions', label: 'History', icon: History },
   { href: '/starred', label: 'Starred', icon: Star },
   { href: '/setup', label: 'Setup', icon: Settings2 },
@@ -42,7 +43,7 @@ export function Shell({ children }: { children: ReactNode }) {
           <span className="font-display whitespace-nowrap text-[1.22rem] tracking-[-.03em]">wind down</span>
         </Link>
         <div className="flex min-w-0 items-center gap-2">
-          <nav className="flex shrink-0 items-center gap-1 rounded-full border border-[hsl(var(--card-border)/.55)] bg-[hsl(var(--card))] p-1" aria-label="Main navigation">
+          <nav className="flex shrink-0 items-center gap-0 rounded-full border border-[hsl(var(--card-border)/.55)] bg-[hsl(var(--card))] p-1 min-[480px]:gap-1" aria-label="Main navigation">
             {nav.map(({ href, label, icon: Icon }) => (
               <Link
                 key={href}
@@ -50,7 +51,7 @@ export function Shell({ children }: { children: ReactNode }) {
                 aria-label={label}
                 title={label}
                 data-testid={`link-nav-${label.toLowerCase()}`}
-                className={`flex min-h-10 items-center gap-1.5 rounded-full px-2 text-xs no-underline transition-colors duration-200 sm:gap-2 sm:px-4 sm:text-sm ${
+                className={`flex min-h-10 items-center gap-1.5 rounded-full px-1 text-xs no-underline transition-colors duration-200 min-[480px]:px-2 sm:gap-2 sm:px-4 sm:text-sm ${
                   location === href ? 'bg-[hsl(var(--secondary))] text-[hsl(var(--foreground))]' : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'
                 }`}
               >

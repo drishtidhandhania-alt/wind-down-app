@@ -1,0 +1,58 @@
+✖ averages three recorded delay values without changing the expected calculation (20.111132ms)
+✖ excludes null delay values and keeps a real zero in the average (1.23891ms)
+✔ returns empty-safe statistics and seven zero-count days when there are no sessions (1.081333ms)
+✔ counts only session start dates in the seven-day local calendar window (0.946901ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 2
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 319.186424
+
+✖ failing tests:
+
+test at ../../../tmp/wind-down-dashboard-isolated/dashboard-stats.test.ts:18:1
+✖ averages three recorded delay values without changing the expected calculation (20.111132ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  7.5 !== 10
+  
+      at TestContext.<anonymous> (file:///tmp/wind-down-dashboard-isolated/dashboard-stats.test.ts:27:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 7.5,
+    expected: 10,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at ../../../tmp/wind-down-dashboard-isolated/dashboard-stats.test.ts:32:1
+✖ excludes null delay values and keeps a real zero in the average (1.23891ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 6.666666666666667
+  - 10
+  
+      at TestContext.<anonymous> (file:///tmp/wind-down-dashboard-isolated/dashboard-stats.test.ts:52:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 6.666666666666667,
+    expected: 10,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+Test command exit code: 1
