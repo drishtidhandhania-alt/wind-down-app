@@ -29,15 +29,20 @@ function hashTesterToken(token: string): string {
 test("routine completion saves one owned history session and preserves legacy requests", async () => {
   const userAId = randomUUID();
   const userBId = randomUUID();
+  const userCId = randomUUID();
   const emailTag = randomUUID();
   const testerAId = randomUUID();
   const testerBId = randomUUID();
   const unlinkedTesterId = randomUUID();
+  const secondUnlinkedTesterId = randomUUID();
   const authTokenA = randomBytes(32).toString("base64url");
   const authTokenB = randomBytes(32).toString("base64url");
+  const authTokenC = randomBytes(32).toString("base64url");
   const testerTokenA = randomBytes(32).toString("base64url");
   const testerTokenB = randomBytes(32).toString("base64url");
   const unlinkedTesterToken = randomBytes(32).toString("base64url");
+  const secondUnlinkedTesterToken = randomBytes(32).toString("base64url");
+  const invalidTesterToken = randomBytes(32).toString("base64url");
   const server = app.listen(0, "127.0.0.1");
 
   try {
@@ -50,6 +55,7 @@ test("routine completion saves one owned history session and preserves legacy re
     const baseUrl = `http://127.0.0.1:${address.port}/api`;
     const cookieA = `wind_down_session=${authTokenA}`;
     const cookieB = `wind_down_session=${authTokenB}`;
+    const cookieC = `wind_down_session=${authTokenC}`;
 
     await db.insert(usersTable).values([
       {
@@ -62,6 +68,11 @@ test("routine completion saves one owned history session and preserves legacy re
         email: `wind-down-routine-b-${emailTag}@example.test`,
         passwordHash: "test-only-password-hash",
       },
+      {
+        id: userCId,
+        email: `wind-down-routine-c-${emailTag}@example.test`,
+        passwordHash: "test-only-password-hash",
+      },
     ]);
     await db.insert(authSessionsTable).values([
       {
@@ -72,6 +83,11 @@ test("routine completion saves one owned history session and preserves legacy re
       {
         userId: userBId,
         tokenHash: hashSessionToken(authTokenB),
+        expiresAt: new Date(Date.now() + 60_000),
+      },
+      {
+        userId: userCId,
+        tokenHash: hashSessionToken(authTokenC),
         expiresAt: new Date(Date.now() + 60_000),
       },
     ]);
@@ -94,10 +110,16 @@ test("routine completion saves one owned history session and preserves legacy re
         tokenHash: hashTesterToken(unlinkedTesterToken),
         timezone: "UTC",
       },
+      {
+        id: secondUnlinkedTesterId,
+        userId: null,
+        tokenHash: hashTesterToken(secondUnlinkedTesterToken),
+        timezone: "UTC",
+      },
     ]);
 
     const postCompletion = (
-      testerToken: string,
+      testerToken: string | undefined,
       body: unknown,
       cookie?: string,
     ) =>
@@ -105,7 +127,7 @@ test("routine completion saves one owned history session and preserves legacy re
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-Tester-Token": testerToken,
+          ...(testerToken !== undefined ? { "X-Tester-Token": testerToken } : {}),
           ...(cookie ? { Cookie: cookie } : {}),
         },
         body: JSON.stringify(body),
@@ -129,7 +151,7 @@ test("routine completion saves one owned history session and preserves legacy re
     assert.equal(invalidStart.status, 400);
 
     const futureStart = await postCompletion(
-      testerTokenA,
+      undefined,
       {
         completedSteps: ROUTINE_STEPS,
         startedAt: new Date(Date.now() + 60_000).toISOString(),
@@ -137,6 +159,19 @@ test("routine completion saves one owned history session and preserves legacy re
       cookieA,
     );
     assert.equal(futureStart.status, 400);
+
+    const invalidToken = await postCompletion(
+      invalidTesterToken,
+      { completedSteps: ROUTINE_STEPS },
+      cookieA,
+    );
+    assert.equal(invalidToken.status, 401);
+
+    const signedOutWithoutToken = await postCompletion(undefined, {
+      completedSteps: ROUTINE_STEPS,
+    });
+    assert.equal(signedOutWithoutToken.status, 401);
+
     assert.deepEqual(
       await db
         .select()
@@ -154,7 +189,7 @@ test("routine completion saves one owned history session and preserves legacy re
 
     const pageStartedAt = new Date(Date.now() - 20_000);
     const browserCompletion = await postCompletion(
-      testerTokenA,
+      undefined,
       {
         completedSteps: ROUTINE_STEPS,
         startedAt: pageStartedAt.toISOString(),
@@ -181,6 +216,21 @@ test("routine completion saves one owned history session and preserves legacy re
     assert.equal(browserSession.outcome, "routine_completed");
     assert.equal(browserSession.minutesDelayed, null);
     assert.equal(browserSession.note, null);
+
+    const noTesterCompletion = await postCompletion(
+      undefined,
+      { completedSteps: ROUTINE_STEPS },
+      cookieC,
+    );
+    assert.equal(noTesterCompletion.status, 201);
+    const noTesterSessions = await db
+      .select()
+      .from(windDownSessionsTable)
+      .where(eq(windDownSessionsTable.userId, userCId));
+    assert.equal(noTesterSessions.length, 1);
+    assert.equal(noTesterSessions[0].outcome, "routine_completed");
+    assert.equal(noTesterSessions[0].minutesDelayed, null);
+    assert.equal(noTesterSessions[0].note, LEGACY_COMPLETION_NOTE);
 
     const tokenOnlyStartedAt = new Date(Date.now() - 15_000);
     const tokenOnlyCompletion = await postCompletion(testerTokenB, {
@@ -245,6 +295,30 @@ test("routine completion saves one owned history session and preserves legacy re
       [],
     );
 
+    const claimedCompletion = await postCompletion(
+      unlinkedTesterToken,
+      { completedSteps: ROUTINE_STEPS },
+      cookieC,
+    );
+    assert.equal(claimedCompletion.status, 201);
+    const [claimedTester] = await db
+      .select()
+      .from(windDownTestersTable)
+      .where(eq(windDownTestersTable.id, unlinkedTesterId));
+    assert.equal(claimedTester.userId, userCId);
+
+    const conflictingClaim = await postCompletion(
+      secondUnlinkedTesterToken,
+      { completedSteps: ROUTINE_STEPS },
+      cookieA,
+    );
+    assert.equal(conflictingClaim.status, 409);
+    const [stillUnlinkedTester] = await db
+      .select()
+      .from(windDownTestersTable)
+      .where(eq(windDownTestersTable.id, secondUnlinkedTesterId));
+    assert.equal(stillUnlinkedTester.userId, null);
+
     const crossAccountCompletion = await postCompletion(
       testerTokenB,
       { completedSteps: ROUTINE_STEPS },
@@ -288,12 +362,20 @@ test("routine completion saves one owned history session and preserves legacy re
       .where(eq(windDownTestersTable.id, unlinkedTesterId))
       .catch(() => undefined);
     await db
+      .delete(windDownTestersTable)
+      .where(eq(windDownTestersTable.id, secondUnlinkedTesterId))
+      .catch(() => undefined);
+    await db
       .delete(usersTable)
       .where(eq(usersTable.id, userAId))
       .catch(() => undefined);
     await db
       .delete(usersTable)
       .where(eq(usersTable.id, userBId))
+      .catch(() => undefined);
+    await db
+      .delete(usersTable)
+      .where(eq(usersTable.id, userCId))
       .catch(() => undefined);
     await pool.end();
   }

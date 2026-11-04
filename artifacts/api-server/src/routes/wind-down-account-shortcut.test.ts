@@ -124,6 +124,33 @@ test("account-owned settings stay private while the Shortcut token still works",
     const remainingMs = new Date(bypass.bypassExpiresAt).getTime() - Date.now();
     assert.ok(remainingMs > 9 * 60_000 && remainingMs <= 10 * 60_000);
 
+    const pauseChoiceWithoutTesterToken = await fetch(
+      `${baseUrl}/wind-down/pause-choice`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: `wind_down_session=${tokenA}`,
+        },
+        body: JSON.stringify({ choice: "start_wind_down" }),
+      },
+    );
+    assert.equal(pauseChoiceWithoutTesterToken.status, 200);
+
+    const pauseChoiceWithInvalidToken = await fetch(
+      `${baseUrl}/wind-down/pause-choice`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Tester-Token": randomBytes(32).toString("base64url"),
+          Cookie: `wind_down_session=${tokenA}`,
+        },
+        body: JSON.stringify({ choice: "start_wind_down" }),
+      },
+    );
+    assert.equal(pauseChoiceWithInvalidToken.status, 401);
+
     const bypassCheck = await fetch(`${baseUrl}/wind-down/check`, {
       method: "POST",
       headers: { "X-Tester-Token": tester.token },

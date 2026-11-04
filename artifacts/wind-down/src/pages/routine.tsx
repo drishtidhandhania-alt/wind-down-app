@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { ArrowLeft, ArrowRight, Check, LoaderCircle, Moon, Smartphone, Droplets, BookOpen } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -12,23 +12,78 @@ const steps: { id: RoutineCompleteInputCompletedStepsItem; title: string; detail
   { id: 'read_five_minutes', title: 'Read for five minutes', detail: 'A few pages, at whatever pace.', icon: BookOpen },
 ];
 
+const ROUTINE_PROGRESS_KEY = 'wind-down-routine-progress';
+
+type RoutineProgress = {
+  checked: RoutineCompleteInputCompletedStepsItem[];
+  routineStartedAt: string;
+};
+
+function readRoutineProgress(): RoutineProgress {
+  const fallback = { checked: [], routineStartedAt: new Date().toISOString() };
+
+  try {
+    const saved = window.sessionStorage.getItem(ROUTINE_PROGRESS_KEY);
+    if (!saved) return fallback;
+
+    const parsed = JSON.parse(saved) as {
+      checked?: unknown;
+      routineStartedAt?: unknown;
+    };
+    const checked = Array.isArray(parsed.checked)
+      ? parsed.checked.filter(
+          (id): id is RoutineCompleteInputCompletedStepsItem =>
+            steps.some((step) => step.id === id),
+        )
+      : [];
+    const startedAt =
+      typeof parsed.routineStartedAt === 'string' &&
+      Number.isFinite(Date.parse(parsed.routineStartedAt)) &&
+      Date.parse(parsed.routineStartedAt) <= Date.now()
+        ? parsed.routineStartedAt
+        : fallback.routineStartedAt;
+
+    return { checked: [...new Set(checked)], routineStartedAt: startedAt };
+  } catch {
+    return fallback;
+  }
+}
+
 export default function RoutinePage() {
   const [, setLocation] = useLocation();
   const auth = useCurrentUser();
-  const [checked, setChecked] = useState<RoutineCompleteInputCompletedStepsItem[]>([]);
+  const [progress, setProgress] = useState<RoutineProgress>(readRoutineProgress);
+  const { checked, routineStartedAt } = progress;
   const [finished, setFinished] = useState(false);
-  const [routineStartedAt] = useState(() => new Date().toISOString());
   const completion = useCompleteWindDownRoutine({ request: testerRequest(auth.data?.id) });
   const queryClient = useQueryClient();
 
+  useEffect(() => {
+    try {
+      window.sessionStorage.setItem(ROUTINE_PROGRESS_KEY, JSON.stringify(progress));
+    } catch {
+      // Keep the routine usable when browser storage is unavailable.
+    }
+  }, [progress]);
+
   const toggle = (id: RoutineCompleteInputCompletedStepsItem) => {
-    setChecked((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
+    setProgress((current) => ({
+      ...current,
+      checked: current.checked.includes(id)
+        ? current.checked.filter((item) => item !== id)
+        : [...current.checked, id],
+    }));
   };
   const finish = () => {
     completion.mutate(
       { data: { completedSteps: checked, startedAt: routineStartedAt } },
       {
         onSuccess: async () => {
+          try {
+            window.sessionStorage.removeItem(ROUTINE_PROGRESS_KEY);
+          } catch {
+            // The successful save should still be shown if storage is unavailable.
+          }
           await queryClient.invalidateQueries({ queryKey: getListWindDownSessionsQueryKey() });
           setFinished(true);
         },
