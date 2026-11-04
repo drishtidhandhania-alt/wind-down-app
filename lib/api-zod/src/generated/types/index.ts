@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './authCredentials';
+export * from './authResult';
+export * from './authUser';
 export * from './healthStatus';
 export * from './pauseChoiceInput';
 export * from './pauseChoiceInputChoice';
@@ -21,3 +24,6 @@ export * from './testerCreated';
 export * from './testerCreateInput';
 export * from './testerSettingsInput';
 export * from './testerState';
+export * from './windDownSession';
+export * from './windDownSessionCreateInput';
+export * from './windDownSessionUpdateInput';

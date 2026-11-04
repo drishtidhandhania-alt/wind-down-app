@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'wouter';
-import { ArrowUpRight, LogIn, LogOut, Moon, Settings2 } from 'lucide-react';
+import { ArrowUpRight, History, LogIn, LogOut, Moon, Settings2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -8,6 +8,7 @@ import { clearActiveTesterScope } from '@/lib/tester-api';
 
 const nav = [
   { href: '/', label: 'Tonight', icon: Moon },
+  { href: '/sessions', label: 'History', icon: History },
   { href: '/setup', label: 'Setup', icon: Settings2 },
 ];
 
@@ -45,13 +46,15 @@ export function Shell({ children }: { children: ReactNode }) {
               <Link
                 key={href}
                 href={href}
+                aria-label={label}
+                title={label}
                 data-testid={`link-nav-${label.toLowerCase()}`}
-                className={`flex min-h-10 items-center gap-1.5 rounded-full px-2.5 text-xs no-underline transition-colors duration-200 sm:gap-2 sm:px-4 sm:text-sm ${
+                className={`flex min-h-10 items-center gap-1.5 rounded-full px-2 text-xs no-underline transition-colors duration-200 sm:gap-2 sm:px-4 sm:text-sm ${
                   location === href ? 'bg-[hsl(var(--secondary))] text-[hsl(var(--foreground))]' : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'
                 }`}
               >
                 <Icon size={15} />
-                <span>{label}</span>
+                <span className="hidden min-[480px]:inline">{label}</span>
               </Link>
             ))}
           </nav>

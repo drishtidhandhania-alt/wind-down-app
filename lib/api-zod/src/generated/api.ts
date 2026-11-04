@@ -18,6 +18,61 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
+ * @summary Create an account and sign in
+ */
+export const signUpBodyPasswordMin = 10;
+
+
+
+export const SignUpBody = zod.object({
+  "email": zod.string().email(),
+  "password": zod.string().min(signUpBodyPasswordMin)
+})
+
+export const SignUpResponse = zod.object({
+  "user": zod.object({
+  "id": zod.string(),
+  "email": zod.string().email()
+})
+})
+
+
+/**
+ * @summary Sign in to an account
+ */
+export const logInBodyPasswordMin = 10;
+
+
+
+export const LogInBody = zod.object({
+  "email": zod.string().email(),
+  "password": zod.string().min(logInBodyPasswordMin)
+})
+
+export const LogInResponse = zod.object({
+  "user": zod.object({
+  "id": zod.string(),
+  "email": zod.string().email()
+})
+})
+
+
+/**
+ * @summary Return the signed-in account
+ */
+export const GetCurrentUserResponse = zod.object({
+  "id": zod.string(),
+  "email": zod.string().email()
+})
+
+
+/**
+ * @summary End the current session
+ */
+export const LogOutResponse = zod.void()
+
+
+/**
  * @summary Create a private tester and token
  */
 
@@ -111,6 +166,111 @@ export const CompleteWindDownRoutineBody = zod.object({
 export const CompleteWindDownRoutineResponse = zod.object({
   "completed": zod.boolean(),
   "completedAt": zod.string()
+})
+
+
+/**
+ * @summary Read a session belonging to the signed-in user
+ */
+export const GetWindDownSessionParams = zod.object({
+  "sessionId": zod.coerce.string()
+})
+
+export const GetWindDownSessionResponse = zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "routineId": zod.string().nullable(),
+  "startedAt": zod.coerce.date(),
+  "endedAt": zod.coerce.date().nullable(),
+  "outcome": zod.string().nullable(),
+  "minutesDelayed": zod.number().int().nullable(),
+  "note": zod.string().nullable()
+})
+
+
+/**
+ * @summary Update a session belonging to the signed-in user
+ */
+export const UpdateWindDownSessionParams = zod.object({
+  "sessionId": zod.coerce.string()
+})
+
+export const updateWindDownSessionBodyMinutesDelayedMin = 0;
+
+
+
+export const UpdateWindDownSessionBody = zod.object({
+  "routineId": zod.string().nullish(),
+  "startedAt": zod.coerce.date().optional(),
+  "endedAt": zod.coerce.date().nullish(),
+  "outcome": zod.string().nullish(),
+  "minutesDelayed": zod.number().int().min(updateWindDownSessionBodyMinutesDelayedMin).nullish(),
+  "note": zod.string().nullish()
+})
+
+export const UpdateWindDownSessionResponse = zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "routineId": zod.string().nullable(),
+  "startedAt": zod.coerce.date(),
+  "endedAt": zod.coerce.date().nullable(),
+  "outcome": zod.string().nullable(),
+  "minutesDelayed": zod.number().int().nullable(),
+  "note": zod.string().nullable()
+})
+
+
+/**
+ * @summary Delete a session belonging to the signed-in user
+ */
+export const DeleteWindDownSessionParams = zod.object({
+  "sessionId": zod.coerce.string()
+})
+
+export const DeleteWindDownSessionResponse = zod.void()
+
+
+/**
+ * @summary List sessions belonging to the signed-in user
+ */
+export const ListWindDownSessionsResponseItem = zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "routineId": zod.string().nullable(),
+  "startedAt": zod.coerce.date(),
+  "endedAt": zod.coerce.date().nullable(),
+  "outcome": zod.string().nullable(),
+  "minutesDelayed": zod.number().int().nullable(),
+  "note": zod.string().nullable()
+})
+export const ListWindDownSessionsResponse = zod.array(ListWindDownSessionsResponseItem)
+
+
+/**
+ * @summary Create a session for the signed-in user
+ */
+export const createWindDownSessionBodyMinutesDelayedMin = 0;
+
+
+
+export const CreateWindDownSessionBody = zod.object({
+  "routineId": zod.string().nullish(),
+  "startedAt": zod.coerce.date(),
+  "endedAt": zod.coerce.date().nullish(),
+  "outcome": zod.string().nullish(),
+  "minutesDelayed": zod.number().int().min(createWindDownSessionBodyMinutesDelayedMin).nullish(),
+  "note": zod.string().nullish()
+})
+
+export const CreateWindDownSessionResponse = zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "routineId": zod.string().nullable(),
+  "startedAt": zod.coerce.date(),
+  "endedAt": zod.coerce.date().nullable(),
+  "outcome": zod.string().nullable(),
+  "minutesDelayed": zod.number().int().nullable(),
+  "note": zod.string().nullable()
 })
 
 

@@ -8,6 +8,9 @@ import HomePage from '@/pages/home';
 import PausePage from '@/pages/pause';
 import RoutinePage from '@/pages/routine';
 import SetupPage from '@/pages/setup';
+import SessionHistoryPage from '@/pages/sessions';
+import SessionDetailPage from '@/pages/session-detail';
+import { EditSessionPage, NewSessionPage } from '@/pages/session-form';
 import { Redirect, Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
 import { Shell } from '@/components/shell';
 import AuthPage from '@/pages/auth';
@@ -31,6 +34,18 @@ function Router() {
           <Route path="/routine" component={RoutinePage} />
           <Route path="/setup">
             <RequireAuth><SetupPage /></RequireAuth>
+          </Route>
+          <Route path="/sessions">
+            <RequireAuth><SessionHistoryPage /></RequireAuth>
+          </Route>
+          <Route path="/sessions/new">
+            <RequireAuth><NewSessionPage /></RequireAuth>
+          </Route>
+          <Route path="/sessions/:sessionId/edit">
+            <RequireAuth><EditSessionPage /></RequireAuth>
+          </Route>
+          <Route path="/sessions/:sessionId">
+            <RequireAuth><SessionDetailPage /></RequireAuth>
           </Route>
           <Route path="/login"><AuthPage /></Route>
           <Route path="/signup"><AuthPage /></Route>

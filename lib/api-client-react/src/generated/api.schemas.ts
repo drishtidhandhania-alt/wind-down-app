@@ -5,6 +5,71 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface AuthCredentials {
+  email: string;
+  /** @minLength 10 */
+  password: string;
+}
+
+export interface AuthUser {
+  id: string;
+  email: string;
+}
+
+export interface AuthResult {
+  user: AuthUser;
+}
+
+export interface WindDownSession {
+  id: string;
+  userId: string;
+  /** @nullable */
+  routineId: string | null;
+  startedAt: string;
+  /** @nullable */
+  endedAt: string | null;
+  /** @nullable */
+  outcome: string | null;
+  /** @nullable */
+  minutesDelayed: number | null;
+  /** @nullable */
+  note: string | null;
+}
+
+export interface WindDownSessionCreateInput {
+  /** @nullable */
+  routineId?: string | null;
+  startedAt: string;
+  /** @nullable */
+  endedAt?: string | null;
+  /** @nullable */
+  outcome?: string | null;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  minutesDelayed?: number | null;
+  /** @nullable */
+  note?: string | null;
+}
+
+export interface WindDownSessionUpdateInput {
+  /** @nullable */
+  routineId?: string | null;
+  startedAt?: string;
+  /** @nullable */
+  endedAt?: string | null;
+  /** @nullable */
+  outcome?: string | null;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  minutesDelayed?: number | null;
+  /** @nullable */
+  note?: string | null;
+}
+
 export interface HealthStatus {
   status: string;
 }

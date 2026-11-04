@@ -1,5 +1,5 @@
-import { createHash, randomBytes } from "node:crypto";
-import { and, eq, isNull } from "drizzle-orm";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import {
   Router,
   type IRouter,
@@ -10,17 +10,24 @@ import {
   CheckWindDownResponse,
   CompleteWindDownRoutineBody,
   CompleteWindDownRoutineResponse,
+  CreateWindDownSessionBody,
+  CreateWindDownSessionResponse,
   CreateWindDownTesterBody,
   CreateWindDownTesterResponse,
+  GetWindDownSessionResponse,
   GetWindDownTesterResponse,
+  ListWindDownSessionsResponse,
   SaveWindDownPauseChoiceBody,
   SaveWindDownPauseChoiceResponse,
+  UpdateWindDownSessionBody,
+  UpdateWindDownSessionResponse,
   UpdateWindDownSettingsBody,
   UpdateWindDownSettingsResponse,
 } from "@workspace/api-zod";
 import {
   db,
   windDownEventsTable,
+  windDownSessionsTable,
   windDownTestersTable,
   type WindDownTester,
 } from "@workspace/db";
@@ -385,6 +392,46 @@ router.post("/wind-down/routine/complete", async (req, res): Promise<void> => {
   );
 });
 
+router.get("/wind-down/sessions", requireAuth, async (req, res): Promise<void> => {
+  const userId = req.authUserId;
+  if (!userId) return;
+
+  const sessions = await db
+    .select()
+    .from(windDownSessionsTable)
+    .where(eq(windDownSessionsTable.userId, userId))
+    .orderBy(desc(windDownSessionsTable.startedAt));
+
+  res.json(ListWindDownSessionsResponse.parse(sessions));
+});
+
+router.post("/wind-down/sessions", requireAuth, async (req, res): Promise<void> => {
+  const userId = req.authUserId;
+  if (!userId) return;
+
+  const parsed = CreateWindDownSessionBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Enter valid session details." });
+    return;
+  }
+
+  const [session] = await db
+    .insert(windDownSessionsTable)
+    .values({
+      id: randomUUID(),
+      userId,
+      routineId: parsed.data.routineId ?? null,
+      startedAt: parsed.data.startedAt,
+      endedAt: parsed.data.endedAt ?? null,
+      outcome: parsed.data.outcome ?? null,
+      minutesDelayed: parsed.data.minutesDelayed ?? null,
+      note: parsed.data.note ?? null,
+    })
+    .returning();
+
+  res.status(201).json(CreateWindDownSessionResponse.parse(session));
+});
+
 router.get(
   "/wind-down/sessions/:sessionId",
   requireAuth,
@@ -398,15 +445,83 @@ router.get(
       res.status(404).json({ error: "Wind Down session not found." });
       return;
     }
-    const session = await findWindDownSessionForUser(
-      sessionId,
-      userId,
-    );
+    const session = await findWindDownSessionForUser(sessionId, userId);
     if (!session) {
       res.status(404).json({ error: "Wind Down session not found." });
       return;
     }
-    res.json(session);
+    res.json(GetWindDownSessionResponse.parse(session));
+  },
+);
+
+router.patch(
+  "/wind-down/sessions/:sessionId",
+  requireAuth,
+  async (req, res): Promise<void> => {
+    const userId = req.authUserId;
+    if (!userId) return;
+    const sessionId = Array.isArray(req.params.sessionId)
+      ? req.params.sessionId[0]
+      : req.params.sessionId;
+    if (!sessionId) {
+      res.status(404).json({ error: "Wind Down session not found." });
+      return;
+    }
+
+    const parsed = UpdateWindDownSessionBody.safeParse(req.body);
+    if (!parsed.success || Object.keys(parsed.data ?? {}).length === 0) {
+      res.status(400).json({ error: "Enter at least one valid session field." });
+      return;
+    }
+
+    const [session] = await db
+      .update(windDownSessionsTable)
+      .set(parsed.data)
+      .where(
+        and(
+          eq(windDownSessionsTable.id, sessionId),
+          eq(windDownSessionsTable.userId, userId),
+        ),
+      )
+      .returning();
+
+    if (!session) {
+      res.status(404).json({ error: "Wind Down session not found." });
+      return;
+    }
+    res.json(UpdateWindDownSessionResponse.parse(session));
+  },
+);
+
+router.delete(
+  "/wind-down/sessions/:sessionId",
+  requireAuth,
+  async (req, res): Promise<void> => {
+    const userId = req.authUserId;
+    if (!userId) return;
+    const sessionId = Array.isArray(req.params.sessionId)
+      ? req.params.sessionId[0]
+      : req.params.sessionId;
+    if (!sessionId) {
+      res.status(404).json({ error: "Wind Down session not found." });
+      return;
+    }
+
+    const [deleted] = await db
+      .delete(windDownSessionsTable)
+      .where(
+        and(
+          eq(windDownSessionsTable.id, sessionId),
+          eq(windDownSessionsTable.userId, userId),
+        ),
+      )
+      .returning({ id: windDownSessionsTable.id });
+
+    if (!deleted) {
+      res.status(404).json({ error: "Wind Down session not found." });
+      return;
+    }
+    res.status(204).end();
   },
 );
 
