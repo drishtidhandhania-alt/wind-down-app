@@ -8,5 +8,7 @@
 import type { RoutineCompleteInputCompletedStepsItem } from './routineCompleteInputCompletedStepsItem';
 
 export interface RoutineCompleteInput {
+  /** Optional client-captured routine start time. Legacy clients may omit it. */
+  startedAt?: Date;
   completedSteps: RoutineCompleteInputCompletedStepsItem[];
 }

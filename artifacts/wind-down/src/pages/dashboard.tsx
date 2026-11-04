@@ -143,7 +143,7 @@ export default function DashboardPage() {
                 Sessions over the last 7 days.
               </h2>
               <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">
-                Counted by session start date in your local timezone.
+                Counted by captured start time; legacy requests without one use their completion log time.
               </p>
             </div>
             <ChartContainer

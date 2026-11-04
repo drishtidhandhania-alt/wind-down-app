@@ -23,6 +23,9 @@ import { SessionStarButton } from '@/components/session-star-button';
 import { useCurrentUser } from '@/lib/auth-api';
 import { useSessionStars } from '@/lib/session-stars';
 
+const LEGACY_ROUTINE_NOTE_PREFIX =
+  'Actual start time and duration were not recorded.';
+
 function formatDate(value: string | null): string {
   if (!value) return 'Not recorded';
   return new Intl.DateTimeFormat(undefined, {
@@ -95,6 +98,10 @@ export default function SessionDetailPage() {
   }
 
   const record = session.data;
+  const isRoutineCompletion = record.outcome === 'routine_completed';
+  const isLegacyRoutineCompletion =
+    isRoutineCompletion &&
+    record.note?.startsWith(LEGACY_ROUTINE_NOTE_PREFIX);
   return (
     <div className="page-enter mx-auto max-w-3xl">
       <Link href="/sessions" className="mb-7 inline-flex items-center gap-2 text-sm text-[hsl(var(--muted-foreground))] no-underline hover:text-[hsl(var(--foreground))]" data-testid="link-back-session-history">
@@ -107,10 +114,14 @@ export default function SessionDetailPage() {
               <CalendarClock size={15} /> Saved session
             </p>
             <h1 className="font-display mt-3 break-words text-3xl leading-tight tracking-[-.025em] sm:text-4xl">
-              {record.note?.trim() || 'Wind-down session'}
+              {isRoutineCompletion
+                ? 'Three-step wind-down'
+                : record.note?.trim() || 'Wind-down session'}
             </h1>
             <p className="mt-3 text-sm text-[hsl(var(--muted-foreground))]">
-              Started {formatDate(record.startedAt)}
+              {isLegacyRoutineCompletion
+                ? `Completion logged ${formatDate(record.endedAt ?? record.startedAt)}`
+                : `Started ${formatDate(record.startedAt)}`}
             </p>
           </div>
           <div className="flex shrink-0 flex-wrap gap-2">
@@ -140,10 +151,13 @@ export default function SessionDetailPage() {
         </div>
 
         <dl className="mt-7 grid gap-3 sm:grid-cols-2">
-          <DetailField label="Started" value={formatDate(record.startedAt)} />
+          <DetailField
+            label="Started"
+            value={isLegacyRoutineCompletion ? 'Not recorded' : formatDate(record.startedAt)}
+          />
           <DetailField label="Ended" value={formatDate(record.endedAt)} />
           <DetailField label="Routine ID" value={record.routineId || 'Not recorded'} />
-          <DetailField label="Outcome" value={record.outcome || 'Not recorded'} />
+          <DetailField label="Outcome" value={isRoutineCompletion ? 'Routine completed' : record.outcome || 'Not recorded'} />
           <DetailField
             label="Minutes delayed"
             value={record.minutesDelayed === null ? 'Not recorded' : String(record.minutesDelayed)}

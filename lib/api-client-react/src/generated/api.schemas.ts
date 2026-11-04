@@ -182,6 +182,8 @@ export const RoutineCompleteInputCompletedStepsItem = {
 } as const;
 
 export interface RoutineCompleteInput {
+  /** Optional client-captured routine start time. Legacy clients may omit it. */
+  startedAt?: string;
   completedSteps: RoutineCompleteInputCompletedStepsItem[];
 }
 
