@@ -22,6 +22,8 @@ type SessionDraft = {
   note: string;
 };
 
+type SessionFieldErrors = Partial<Record<'startedAt' | 'outcome', string>>;
+
 function toDateTimeLocal(value: string | null | undefined): string {
   if (!value) return '';
   const date = new Date(value);
@@ -63,16 +65,26 @@ function InputField({
   label,
   children,
   hint,
+  required = false,
+  error,
+  errorId,
 }: {
   label: string;
   children: React.ReactNode;
   hint?: string;
+  required?: boolean;
+  error?: string;
+  errorId?: string;
 }) {
   return (
     <label className="block min-w-0 text-sm font-medium">
-      <span>{label}</span>
+      <span>
+        {label}
+        {required && <span className="ml-1 text-xs font-normal text-[hsl(var(--muted-foreground))]">(required)</span>}
+      </span>
       {children}
       {hint && <span className="mt-1 block text-xs font-normal text-[hsl(var(--muted-foreground))]">{hint}</span>}
+      {error && <span id={errorId} className="mt-1 block text-sm font-normal text-[hsl(var(--destructive))]" role="alert">{error}</span>}
     </label>
   );
 }
@@ -86,6 +98,8 @@ function SessionFields({
   submit,
   submitting,
   error,
+  fieldErrors,
+  clearFieldError,
   submitLabel,
   backHref,
 }: {
@@ -94,6 +108,8 @@ function SessionFields({
   submit: (event: FormEvent<HTMLFormElement>) => void;
   submitting: boolean;
   error: string;
+  fieldErrors: SessionFieldErrors;
+  clearFieldError: (field: keyof SessionFieldErrors) => void;
   submitLabel: string;
   backHref: string;
 }) {
@@ -108,14 +124,19 @@ function SessionFields({
         {backHref === '/sessions' ? 'Session history' : 'Back to session'}
       </Link>
       <section className="rounded-[1.5rem] border border-[hsl(var(--card-border)/.66)] bg-[hsl(var(--card))] p-5 sm:p-8">
-        <form onSubmit={submit}>
+        <form noValidate onSubmit={submit}>
           <div className="grid gap-5 sm:grid-cols-2">
-            <InputField label="Started at">
+            <InputField label="Started at" required error={fieldErrors.startedAt} errorId="session-started-at-error">
               <input
                 type="datetime-local"
                 required
                 value={draft.startedAt}
-                onChange={(event) => update('startedAt', event.target.value)}
+                aria-invalid={Boolean(fieldErrors.startedAt)}
+                aria-describedby={fieldErrors.startedAt ? 'session-started-at-error' : undefined}
+                onChange={(event) => {
+                  update('startedAt', event.target.value);
+                  if (event.target.value.trim()) clearFieldError('startedAt');
+                }}
                 className={inputClass}
                 data-testid="input-session-started-at"
               />
@@ -139,11 +160,17 @@ function SessionFields({
                 data-testid="input-session-routine-id"
               />
             </InputField>
-            <InputField label="Outcome">
+            <InputField label="Outcome" required error={fieldErrors.outcome} errorId="session-outcome-error">
               <input
                 type="text"
                 value={draft.outcome}
-                onChange={(event) => update('outcome', event.target.value)}
+                required
+                aria-invalid={Boolean(fieldErrors.outcome)}
+                aria-describedby={fieldErrors.outcome ? 'session-outcome-error' : undefined}
+                onChange={(event) => {
+                  update('outcome', event.target.value);
+                  if (event.target.value.trim()) clearFieldError('outcome');
+                }}
                 maxLength={200}
                 placeholder="For example, went to bed"
                 className={inputClass}
@@ -227,10 +254,17 @@ export function NewSessionPage() {
   const createSession = useCreateWindDownSession();
   const [draft, setDraft] = useState(createDraft);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<SessionFieldErrors>({});
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError('');
+    const nextFieldErrors: SessionFieldErrors = {};
+    if (!draft.startedAt.trim()) nextFieldErrors.startedAt = 'Choose when this session started.';
+    if (!draft.outcome.trim()) nextFieldErrors.outcome = 'Add a short outcome before saving this session.';
+    setFieldErrors(nextFieldErrors);
+    if (Object.keys(nextFieldErrors).length > 0) return;
+
     const input = toInput(draft);
     if (!input.startedAt) {
       setError('Choose a valid start time.');
@@ -265,6 +299,8 @@ export function NewSessionPage() {
         submit={submit}
         submitting={createSession.isPending}
         error={error}
+        fieldErrors={fieldErrors}
+        clearFieldError={(field) => setFieldErrors((current) => ({ ...current, [field]: undefined }))}
         submitLabel="Save session"
         backHref="/sessions"
       />
@@ -279,6 +315,7 @@ export function EditSessionPage() {
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState<SessionDraft | null>(null);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<SessionFieldErrors>({});
   const session = useGetWindDownSession(sessionId, {
     query: {
       enabled: Boolean(auth.data && sessionId),
@@ -295,6 +332,12 @@ export function EditSessionPage() {
     event.preventDefault();
     if (!draft) return;
     setError('');
+    const nextFieldErrors: SessionFieldErrors = {};
+    if (!draft.startedAt.trim()) nextFieldErrors.startedAt = 'Choose when this session started.';
+    if (!draft.outcome.trim()) nextFieldErrors.outcome = 'Add a short outcome before saving this session.';
+    setFieldErrors(nextFieldErrors);
+    if (Object.keys(nextFieldErrors).length > 0) return;
+
     const input = toInput(draft);
     if (!input.startedAt) {
       setError('Choose a valid start time.');
@@ -354,6 +397,8 @@ export function EditSessionPage() {
         submit={submit}
         submitting={updateSession.isPending}
         error={error}
+        fieldErrors={fieldErrors}
+        clearFieldError={(field) => setFieldErrors((current) => ({ ...current, [field]: undefined }))}
         submitLabel="Save changes"
         backHref={`/sessions/${encodeURIComponent(sessionId)}`}
       />

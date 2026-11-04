@@ -17,6 +17,9 @@ const fallback: TesterState = {
   bypassExpiresAt: null,
 };
 
+type SettingsField = 'bedtime' | 'morningEnd' | 'timezone';
+type SettingsFieldErrors = Partial<Record<SettingsField, string>>;
+
 function formatTime(value: string) {
   const [hours, minutes] = value.split(':').map(Number);
   const date = new Date();
@@ -37,6 +40,7 @@ export default function HomePage() {
   const [timezone, setTimezone] = useState(fallback.timezone);
   const [testMode, setTestMode] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [settingsErrors, setSettingsErrors] = useState<SettingsFieldErrors>({});
   const queryClient = useQueryClient();
   useEffect(() => {
     setTokenReady(Boolean(auth.data && hasTesterToken(auth.data.id)));
@@ -59,12 +63,28 @@ export default function HomePage() {
 
   const save = () => {
     setSaved(false);
+    settingsMutation.reset();
+    const nextErrors: SettingsFieldErrors = {};
+    if (!bedtime.trim()) nextErrors.bedtime = 'Choose a bedtime for your wind-down window.';
+    if (!morningEnd.trim()) nextErrors.morningEnd = 'Choose when your wind-down window should end.';
+    if (!timezone.trim()) nextErrors.timezone = 'Enter the timezone for your bedtime settings.';
+    setSettingsErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+
     settingsMutation.mutate({ data: { bedtime, morningEnd, timezone, testMode } }, {
       onSuccess: (next) => {
         queryClient.setQueryData(getGetWindDownTesterQueryKey(), next);
         setSaved(true);
         window.setTimeout(() => setSaved(false), 2600);
       },
+    });
+  };
+
+  const clearSettingsError = (field: SettingsField) => {
+    setSettingsErrors((current) => {
+      const next = { ...current };
+      delete next[field];
+      return next;
     });
   };
 
@@ -198,10 +218,10 @@ export default function HomePage() {
             </div>
             <div className="mt-5 flex flex-col gap-3 sm:mt-0 sm:w-auto sm:min-w-[17rem]">
               <div className="grid grid-cols-2 gap-3">
-                <label className="text-xs text-[hsl(var(--muted-foreground))]">Bedtime<input type="time" value={bedtime} onChange={(event) => setBedtime(event.target.value)} className="mt-2 block min-h-11 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background)/.65)] px-3 text-sm text-[hsl(var(--foreground))]" data-testid="input-bedtime" /></label>
-                <label className="text-xs text-[hsl(var(--muted-foreground))]">Morning end<input type="time" value={morningEnd} onChange={(event) => setMorningEnd(event.target.value)} className="mt-2 block min-h-11 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background)/.65)] px-3 text-sm text-[hsl(var(--foreground))]" data-testid="input-morning-end" /></label>
+                <label className="text-xs text-[hsl(var(--muted-foreground))]">Bedtime<input type="time" required aria-invalid={Boolean(settingsErrors.bedtime)} aria-describedby={settingsErrors.bedtime ? 'bedtime-error' : undefined} value={bedtime} onChange={(event) => { setBedtime(event.target.value); if (event.target.value.trim()) clearSettingsError('bedtime'); }} className="mt-2 block min-h-11 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background)/.65)] px-3 text-sm text-[hsl(var(--foreground))]" data-testid="input-bedtime" />{settingsErrors.bedtime && <span id="bedtime-error" className="mt-1 block text-xs text-[hsl(var(--destructive))]" role="alert">{settingsErrors.bedtime}</span>}</label>
+                <label className="text-xs text-[hsl(var(--muted-foreground))]">Morning end<input type="time" required aria-invalid={Boolean(settingsErrors.morningEnd)} aria-describedby={settingsErrors.morningEnd ? 'morning-end-error' : undefined} value={morningEnd} onChange={(event) => { setMorningEnd(event.target.value); if (event.target.value.trim()) clearSettingsError('morningEnd'); }} className="mt-2 block min-h-11 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background)/.65)] px-3 text-sm text-[hsl(var(--foreground))]" data-testid="input-morning-end" />{settingsErrors.morningEnd && <span id="morning-end-error" className="mt-1 block text-xs text-[hsl(var(--destructive))]" role="alert">{settingsErrors.morningEnd}</span>}</label>
               </div>
-              <label className="text-xs text-[hsl(var(--muted-foreground))]">Timezone<input value={timezone} onChange={(event) => setTimezone(event.target.value)} className="mt-2 block min-h-11 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background)/.65)] px-3 text-sm text-[hsl(var(--foreground))]" data-testid="input-timezone" /></label>
+              <label className="text-xs text-[hsl(var(--muted-foreground))]">Timezone<input required aria-invalid={Boolean(settingsErrors.timezone)} aria-describedby={settingsErrors.timezone ? 'timezone-error' : undefined} value={timezone} onChange={(event) => { setTimezone(event.target.value); if (event.target.value.trim()) clearSettingsError('timezone'); }} className="mt-2 block min-h-11 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background)/.65)] px-3 text-sm text-[hsl(var(--foreground))]" data-testid="input-timezone" />{settingsErrors.timezone && <span id="timezone-error" className="mt-1 block text-xs text-[hsl(var(--destructive))]" role="alert">{settingsErrors.timezone}</span>}</label>
               <button onClick={save} disabled={settingsMutation.isPending} className="flex min-h-11 items-center justify-center gap-2 rounded-full border border-[hsl(var(--border))] px-4 text-sm font-semibold hover:bg-[hsl(var(--secondary))] disabled:opacity-50" data-testid="button-save-settings">
                 {settingsMutation.isPending ? 'Saving…' : saved ? <><Check size={15} /> Saved</> : 'Save settings'}
               </button>
