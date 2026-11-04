@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import HomePage from '@/pages/home';
+import DashboardPage from '@/pages/dashboard';
 import PausePage from '@/pages/pause';
 import RoutinePage from '@/pages/routine';
 import SetupPage from '@/pages/setup';
@@ -31,6 +32,9 @@ function Router() {
       <Shell>
         <Switch>
           <Route path="/" component={HomePage} />
+          <Route path="/dashboard">
+            <RequireAuth><DashboardPage /></RequireAuth>
+          </Route>
           <Route path="/pause" component={PausePage} />
           <Route path="/routine" component={RoutinePage} />
           <Route path="/setup">
