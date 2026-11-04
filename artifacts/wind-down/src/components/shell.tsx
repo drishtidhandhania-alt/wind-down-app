@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'wouter';
-import { ArrowUpRight, History, LogIn, LogOut, Moon, Settings2 } from 'lucide-react';
+import { ArrowUpRight, History, LogIn, LogOut, Moon, Settings2, Star } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -9,6 +9,7 @@ import { clearActiveTesterScope } from '@/lib/tester-api';
 const nav = [
   { href: '/', label: 'Tonight', icon: Moon },
   { href: '/sessions', label: 'History', icon: History },
+  { href: '/starred', label: 'Starred', icon: Star },
   { href: '/setup', label: 'Setup', icon: Settings2 },
 ];
 

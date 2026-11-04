@@ -35,7 +35,8 @@ import type {
   TesterState,
   WindDownSession,
   WindDownSessionCreateInput,
-  WindDownSessionUpdateInput
+  WindDownSessionUpdateInput,
+  WindDownStarResult
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -1377,5 +1378,230 @@ export const useCreateWindDownSession = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getCreateWindDownSessionMutationOptions(options));
+    }
+
+export const getListStarredWindDownSessionsUrl = () => {
+
+
+
+
+  return `/api/wind-down/stars`
+}
+
+/**
+ * @summary List sessions starred by the signed-in user
+ */
+export const listStarredWindDownSessions = async ( options?: Parameters<typeof customFetch>[1]): Promise<WindDownSession[]> => {
+
+  return customFetch<WindDownSession[]>(getListStarredWindDownSessionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListStarredWindDownSessionsQueryKey = () => {
+    return [
+    `/api/wind-down/stars`
+    ] as const;
+    }
+
+
+export const getListStarredWindDownSessionsQueryOptions = <TData = Awaited<ReturnType<typeof listStarredWindDownSessions>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listStarredWindDownSessions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListStarredWindDownSessionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listStarredWindDownSessions>>> = ({ signal }) => listStarredWindDownSessions({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listStarredWindDownSessions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListStarredWindDownSessionsQueryResult = NonNullable<Awaited<ReturnType<typeof listStarredWindDownSessions>>>
+export type ListStarredWindDownSessionsQueryError = ErrorType<void>
+
+
+/**
+ * @summary List sessions starred by the signed-in user
+ */
+
+export function useListStarredWindDownSessions<TData = Awaited<ReturnType<typeof listStarredWindDownSessions>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listStarredWindDownSessions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListStarredWindDownSessionsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getStarWindDownSessionUrl = (sessionId: string,) => {
+
+
+
+
+  return `/api/wind-down/sessions/${sessionId}/star`
+}
+
+/**
+ * @summary Star a session belonging to the signed-in user
+ */
+export const starWindDownSession = async (sessionId: string, options?: Parameters<typeof customFetch>[1]): Promise<WindDownStarResult> => {
+
+  return customFetch<WindDownStarResult>(getStarWindDownSessionUrl(sessionId),
+  {
+    ...options,
+    method: 'PUT'
+
+
+  }
+);}
+
+
+
+
+
+export const getStarWindDownSessionMutationKey = () => ['starWindDownSession'] as const;
+
+export const getStarWindDownSessionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof starWindDownSession>>, TError,StarWindDownSessionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof starWindDownSession>>, TError,StarWindDownSessionMutationVariables, TContext> => {
+
+const mutationKey = getStarWindDownSessionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof starWindDownSession>>, StarWindDownSessionMutationVariables> = (props) => {
+          const {sessionId} = props ?? {};
+
+          return  starWindDownSession(sessionId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StarWindDownSessionMutationResult = NonNullable<Awaited<ReturnType<typeof starWindDownSession>>>
+
+    export type StarWindDownSessionMutationError = ErrorType<void>
+    export type StarWindDownSessionMutationVariables = {sessionId: string}
+
+    /**
+ * @summary Star a session belonging to the signed-in user
+ */
+export const useStarWindDownSession = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof starWindDownSession>>, TError,StarWindDownSessionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof starWindDownSession>>,
+        TError,
+        StarWindDownSessionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getStarWindDownSessionMutationOptions(options));
+    }
+
+export const getUnstarWindDownSessionUrl = (sessionId: string,) => {
+
+
+
+
+  return `/api/wind-down/sessions/${sessionId}/star`
+}
+
+/**
+ * @summary Remove the signed-in user's star from a session
+ */
+export const unstarWindDownSession = async (sessionId: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getUnstarWindDownSessionUrl(sessionId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getUnstarWindDownSessionMutationKey = () => ['unstarWindDownSession'] as const;
+
+export const getUnstarWindDownSessionMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unstarWindDownSession>>, TError,UnstarWindDownSessionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof unstarWindDownSession>>, TError,UnstarWindDownSessionMutationVariables, TContext> => {
+
+const mutationKey = getUnstarWindDownSessionMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof unstarWindDownSession>>, UnstarWindDownSessionMutationVariables> = (props) => {
+          const {sessionId} = props ?? {};
+
+          return  unstarWindDownSession(sessionId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UnstarWindDownSessionMutationResult = NonNullable<Awaited<ReturnType<typeof unstarWindDownSession>>>
+
+    export type UnstarWindDownSessionMutationError = ErrorType<void>
+    export type UnstarWindDownSessionMutationVariables = {sessionId: string}
+
+    /**
+ * @summary Remove the signed-in user's star from a session
+ */
+export const useUnstarWindDownSession = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof unstarWindDownSession>>, TError,UnstarWindDownSessionMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof unstarWindDownSession>>,
+        TError,
+        UnstarWindDownSessionMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUnstarWindDownSessionMutationOptions(options));
     }
 
