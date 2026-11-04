@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation, useParams } from 'wouter';
 import {
   getGetWindDownSessionQueryKey,
+  getListStarredWindDownSessionsQueryKey,
   getListWindDownSessionsQueryKey,
   useCreateWindDownSession,
   useGetWindDownSession,
@@ -356,6 +357,7 @@ export function EditSessionPage() {
       {
         onSuccess: async (updated) => {
           await queryClient.invalidateQueries({ queryKey: getListWindDownSessionsQueryKey() });
+          await queryClient.invalidateQueries({ queryKey: getListStarredWindDownSessionsQueryKey() });
           queryClient.setQueryData(
             [...getGetWindDownSessionQueryKey(sessionId), auth.data?.id],
             updated,

@@ -27,3 +27,4 @@ export * from './testerState';
 export * from './windDownSession';
 export * from './windDownSessionCreateInput';
 export * from './windDownSessionUpdateInput';
+export * from './windDownStarResult';

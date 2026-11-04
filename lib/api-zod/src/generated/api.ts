@@ -274,3 +274,41 @@ export const CreateWindDownSessionResponse = zod.object({
 })
 
 
+/**
+ * @summary List sessions starred by the signed-in user
+ */
+export const ListStarredWindDownSessionsResponseItem = zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "routineId": zod.string().nullable(),
+  "startedAt": zod.coerce.date(),
+  "endedAt": zod.coerce.date().nullable(),
+  "outcome": zod.string().nullable(),
+  "minutesDelayed": zod.number().int().nullable(),
+  "note": zod.string().nullable()
+})
+export const ListStarredWindDownSessionsResponse = zod.array(ListStarredWindDownSessionsResponseItem)
+
+
+/**
+ * @summary Star a session belonging to the signed-in user
+ */
+export const StarWindDownSessionParams = zod.object({
+  "sessionId": zod.coerce.string()
+})
+
+export const StarWindDownSessionResponse = zod.object({
+  "starred": zod.boolean()
+})
+
+
+/**
+ * @summary Remove the signed-in user's star from a session
+ */
+export const UnstarWindDownSessionParams = zod.object({
+  "sessionId": zod.coerce.string()
+})
+
+export const UnstarWindDownSessionResponse = zod.void()
+
+

@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation, useParams } from 'wouter';
 import {
   getGetWindDownSessionQueryKey,
+  getListStarredWindDownSessionsQueryKey,
   getListWindDownSessionsQueryKey,
   useDeleteWindDownSession,
   useGetWindDownSession,
@@ -18,7 +19,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { SessionStarButton } from '@/components/session-star-button';
 import { useCurrentUser } from '@/lib/auth-api';
+import { useSessionStars } from '@/lib/session-stars';
 
 function formatDate(value: string | null): string {
   if (!value) return 'Not recorded';
@@ -40,6 +43,7 @@ function DetailField({ label, value }: { label: string; value: string }) {
 export default function SessionDetailPage() {
   const { sessionId = '' } = useParams<{ sessionId: string }>();
   const auth = useCurrentUser();
+  const stars = useSessionStars(auth.data?.id);
   const [, setLocation] = useLocation();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const queryClient = useQueryClient();
@@ -57,6 +61,7 @@ export default function SessionDetailPage() {
       {
         onSuccess: async () => {
           await queryClient.invalidateQueries({ queryKey: getListWindDownSessionsQueryKey() });
+          await queryClient.invalidateQueries({ queryKey: getListStarredWindDownSessionsQueryKey() });
           queryClient.removeQueries({ queryKey: getGetWindDownSessionQueryKey(sessionId) });
           setConfirmDelete(false);
           setLocation('/sessions');
@@ -108,7 +113,14 @@ export default function SessionDetailPage() {
               Started {formatDate(record.startedAt)}
             </p>
           </div>
-          <div className="flex shrink-0 gap-2">
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <SessionStarButton
+              sessionId={record.id}
+              isStarred={stars.isStarred(record.id)}
+              disabled={stars.query.isLoading || stars.query.isError || stars.isPending}
+              showLabel
+              onToggle={() => stars.toggle(record.id, stars.isStarred(record.id))}
+            />
             <Link
               href={`/sessions/${encodeURIComponent(record.id)}/edit`}
               className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[hsl(var(--border))] px-4 text-sm font-medium text-inherit no-underline hover:bg-[hsl(var(--secondary))]"
@@ -141,6 +153,23 @@ export default function SessionDetailPage() {
         {removeSession.isError && (
           <p className="mt-5 text-sm text-[hsl(var(--destructive))]" role="alert">
             This session couldn’t be deleted. Please try again.
+          </p>
+        )}
+        {stars.query.isError && (
+          <p className="mt-5 text-sm text-[hsl(var(--destructive))]" role="alert">
+            Star status didn’t load.{' '}
+            <button
+              type="button"
+              onClick={() => stars.query.refetch()}
+              className="underline underline-offset-4"
+            >
+              Try again
+            </button>
+          </p>
+        )}
+        {stars.actionError && (
+          <p className="mt-5 text-sm text-[hsl(var(--destructive))]" role="alert">
+            We couldn’t update that star. Please try again.
           </p>
         )}
       </section>

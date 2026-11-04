@@ -36,6 +36,10 @@ export interface WindDownSession {
   note: string | null;
 }
 
+export interface WindDownStarResult {
+  starred: boolean;
+}
+
 export interface WindDownSessionCreateInput {
   /** @nullable */
   routineId?: string | null;

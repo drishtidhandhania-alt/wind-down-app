@@ -1,18 +1,14 @@
-import { ArrowRight, Clock3, LoaderCircle, Plus } from 'lucide-react';
+import { Clock3, LoaderCircle, Plus } from 'lucide-react';
 import { Link } from 'wouter';
 import { getListWindDownSessionsQueryKey, useListWindDownSessions } from '@workspace/api-client-react';
 import { PageHeading } from '@/components/shell';
+import { SessionCard } from '@/components/session-card';
 import { useCurrentUser } from '@/lib/auth-api';
-
-function formatDate(value: string): string {
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(value));
-}
+import { useSessionStars } from '@/lib/session-stars';
 
 export default function SessionHistoryPage() {
   const auth = useCurrentUser();
+  const stars = useSessionStars(auth.data?.id);
   const sessions = useListWindDownSessions({
     query: {
       enabled: Boolean(auth.data),
@@ -38,6 +34,25 @@ export default function SessionHistoryPage() {
         }
       />
 
+      {stars.query.isError && (
+        <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-[hsl(var(--destructive))]" role="alert">
+          <span>Star status didn’t load, so stars are temporarily unavailable.</span>
+          <button
+            type="button"
+            onClick={() => stars.query.refetch()}
+            className="min-h-9 rounded-full border border-[hsl(var(--border))] px-3 text-xs font-medium text-[hsl(var(--foreground))]"
+            data-testid="button-retry-session-stars"
+          >
+            Try again
+          </button>
+        </div>
+      )}
+      {stars.actionError && (
+        <p className="mb-4 text-sm text-[hsl(var(--destructive))]" role="alert">
+          We couldn’t update that star. Please try again.
+        </p>
+      )}
+
       {sessions.isLoading ? (
         <section className="flex min-h-40 items-center justify-center gap-3 rounded-[1.5rem] border border-[hsl(var(--card-border)/.66)] bg-[hsl(var(--card))] text-sm text-[hsl(var(--muted-foreground))]">
           <LoaderCircle size={18} className="animate-spin" />
@@ -49,7 +64,7 @@ export default function SessionHistoryPage() {
           <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">Check your connection, then try again.</p>
           <button
             type="button"
-            onClick={() => sessions.refetch()}
+            onClick={() => { sessions.refetch(); stars.query.refetch(); }}
             className="mt-5 min-h-11 rounded-full border border-[hsl(var(--border))] px-5 text-sm font-medium hover:bg-[hsl(var(--secondary))]"
             data-testid="button-retry-sessions"
           >
@@ -59,29 +74,13 @@ export default function SessionHistoryPage() {
       ) : sessions.data?.length ? (
         <div className="grid gap-3">
           {sessions.data.map((session) => (
-            <Link
+            <SessionCard
               key={session.id}
-              href={`/sessions/${encodeURIComponent(session.id)}`}
-              className="group block rounded-[1.25rem] border border-[hsl(var(--card-border)/.66)] bg-[hsl(var(--card))] p-5 text-inherit no-underline transition-colors hover:bg-[hsl(var(--secondary))] sm:p-6"
-              data-testid={`link-session-${session.id}`}
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="flex items-center gap-2 text-xs text-[hsl(var(--muted-foreground))]">
-                    <Clock3 size={14} className="shrink-0 text-[hsl(var(--accent))]" />
-                    <span>{formatDate(session.startedAt)}</span>
-                  </p>
-                  <h2 className="mt-3 break-words font-display text-2xl leading-tight">
-                    {session.note?.trim() || 'Wind-down session'}
-                  </h2>
-                  <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">
-                    {session.outcome?.trim() || 'No outcome recorded'}
-                    {session.minutesDelayed !== null && ` · ${session.minutesDelayed} minutes delayed`}
-                  </p>
-                </div>
-                <ArrowRight size={18} className="mt-1 shrink-0 text-[hsl(var(--accent))] transition-transform group-hover:translate-x-1" />
-              </div>
-            </Link>
+              session={session}
+              isStarred={stars.isStarred(session.id)}
+              starDisabled={stars.query.isLoading || stars.query.isError || stars.isPending}
+              onToggleStar={() => stars.toggle(session.id, stars.isStarred(session.id))}
+            />
           ))}
         </div>
       ) : (

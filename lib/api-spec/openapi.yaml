@@ -337,6 +337,65 @@ paths:
           description: Invalid session fields
         "401":
           description: Signed out
+  /wind-down/stars:
+    get:
+      operationId: listStarredWindDownSessions
+      tags: [wind-down]
+      summary: List sessions starred by the signed-in user
+      security:
+        - CookieSession: []
+      responses:
+        "200":
+          description: Sessions starred by the signed-in user
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WindDownSession"
+        "401":
+          description: Signed out
+  /wind-down/sessions/{sessionId}/star:
+    put:
+      operationId: starWindDownSession
+      tags: [wind-down]
+      summary: Star a session belonging to the signed-in user
+      security:
+        - CookieSession: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Session is starred for the signed-in user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WindDownStarResult"
+        "401":
+          description: Signed out
+        "404":
+          description: Session not found for this user
+    delete:
+      operationId: unstarWindDownSession
+      tags: [wind-down]
+      summary: Remove the signed-in user's star from a session
+      security:
+        - CookieSession: []
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Star removed if it belonged to the signed-in user
+        "401":
+          description: Signed out
 components:
   securitySchemes:
     TesterToken:
@@ -396,6 +455,12 @@ components:
         note:
           type: ["string", "null"]
       required: [id, userId, routineId, startedAt, endedAt, outcome, minutesDelayed, note]
+    WindDownStarResult:
+      type: object
+      properties:
+        starred:
+          type: boolean
+      required: [starred]
     WindDownSessionCreateInput:
       type: object
       additionalProperties: false

@@ -17,8 +17,10 @@ import {
   GetWindDownSessionResponse,
   GetWindDownTesterResponse,
   ListWindDownSessionsResponse,
+  ListStarredWindDownSessionsResponse,
   SaveWindDownPauseChoiceBody,
   SaveWindDownPauseChoiceResponse,
+  StarWindDownSessionResponse,
   UpdateWindDownSessionBody,
   UpdateWindDownSessionResponse,
   UpdateWindDownSettingsBody,
@@ -26,6 +28,7 @@ import {
 } from "@workspace/api-zod";
 import {
   db,
+  starsTable,
   windDownEventsTable,
   windDownSessionsTable,
   windDownTestersTable,
@@ -404,6 +407,83 @@ router.get("/wind-down/sessions", requireAuth, async (req, res): Promise<void> =
 
   res.json(ListWindDownSessionsResponse.parse(sessions));
 });
+
+router.get("/wind-down/stars", requireAuth, async (req, res): Promise<void> => {
+  const userId = req.authUserId;
+  if (!userId) return;
+
+  const starredSessions = await db
+    .select({ session: windDownSessionsTable })
+    .from(starsTable)
+    .innerJoin(
+      windDownSessionsTable,
+      eq(starsTable.sessionId, windDownSessionsTable.id),
+    )
+    .where(
+      and(
+        eq(starsTable.userId, userId),
+        eq(windDownSessionsTable.userId, userId),
+      ),
+    )
+    .orderBy(desc(windDownSessionsTable.startedAt));
+
+  res.json(
+    ListStarredWindDownSessionsResponse.parse(
+      starredSessions.map(({ session }) => session),
+    ),
+  );
+});
+
+router.put(
+  "/wind-down/sessions/:sessionId/star",
+  requireAuth,
+  async (req, res): Promise<void> => {
+    const userId = req.authUserId;
+    if (!userId) return;
+    const sessionId = Array.isArray(req.params.sessionId)
+      ? req.params.sessionId[0]
+      : req.params.sessionId;
+    if (!sessionId || !(await findWindDownSessionForUser(sessionId, userId))) {
+      res.status(404).json({ error: "Wind Down session not found." });
+      return;
+    }
+
+    await db
+      .insert(starsTable)
+      .values({ userId, sessionId })
+      .onConflictDoNothing({
+        target: [starsTable.userId, starsTable.sessionId],
+      });
+
+    res.json(StarWindDownSessionResponse.parse({ starred: true }));
+  },
+);
+
+router.delete(
+  "/wind-down/sessions/:sessionId/star",
+  requireAuth,
+  async (req, res): Promise<void> => {
+    const userId = req.authUserId;
+    if (!userId) return;
+    const sessionId = Array.isArray(req.params.sessionId)
+      ? req.params.sessionId[0]
+      : req.params.sessionId;
+    if (!sessionId) {
+      res.status(404).json({ error: "Wind Down session not found." });
+      return;
+    }
+
+    await db
+      .delete(starsTable)
+      .where(
+        and(
+          eq(starsTable.userId, userId),
+          eq(starsTable.sessionId, sessionId),
+        ),
+      );
+    res.status(204).end();
+  },
+);
 
 router.post("/wind-down/sessions", requireAuth, async (req, res): Promise<void> => {
   const userId = req.authUserId;
